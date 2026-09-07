@@ -53,5 +53,13 @@ WALS, Glottolog, and Grambank are CC-BY. The site footer repeats the required ci
 
 ## License
 
-The site code is [MIT](LICENSE): you may use, copy, modify, and redistribute it freely. Bundled WALS, Glottolog, and Grambank data stay under their CC-BY terms.
+Calendula’s Library (code, interface, and original lesson text) is
+[CC BY-SA 4.0](LICENSE): copy, remix, and share it, including commercially,
+if you credit the source **and** keep adaptations under CC-BY-SA or a
+compatible ShareAlike license. MIT would have allowed a closed fork; ShareAlike
+does not.
+
+Bundled WALS, Glottolog, and Grambank remain [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+(attribution, no ShareAlike requirement of their own). Credit those authors
+when you reuse the data.
 
