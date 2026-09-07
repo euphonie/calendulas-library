@@ -1,0 +1,26 @@
+{
+  "name": "calendulas-library",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "data:download": "python3 scripts/download_datasets.py",
+    "data": "python3 scripts/build_data.py",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@types/d3": "^7.4.3",
+    "@types/topojson-client": "^3.1.5",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.2"
+  },
+  "dependencies": {
+    "chart.js": "^4.5.1",
+    "d3": "^7.9.0",
+    "maplibre-gl": "^6.7.0",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2"
+  }
+}
