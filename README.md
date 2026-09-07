@@ -50,3 +50,8 @@ Vite + TypeScript, MapLibre GL with a local Natural Earth land layer (no map API
 ## Cite the data
 
 WALS, Glottolog, and Grambank are CC-BY. The site footer repeats the required citations. Lesson text is original; chapter prose is not copied. Link through to wals.info and grambank.clld.org.
+
+## License
+
+The site code is [MIT](LICENSE): you may use, copy, modify, and redistribute it freely. Bundled WALS, Glottolog, and Grambank data stay under their CC-BY terms.
+
