@@ -1,11 +1,14 @@
 import { feature } from "topojson-client"
 import landTopo from "world-atlas/land-110m.json"
-import { Map as MapLibreMap, NavigationControl, Popup, LngLatBounds } from "maplibre-gl"
+import { Map as MapLibreMap, NavigationControl, Popup, LngLatBounds, setWorkerUrl } from "maplibre-gl"
+import mapWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url"
 import type { GeoJSONSource, MapLayerMouseEvent, StyleSpecification } from "maplibre-gl"
 import type { GeometryCollection, Topology } from "topojson-specification"
 import type { Feature, Language } from "../types.ts"
 import { colorForCodes } from "../format.ts"
 import { theme } from "../theme.ts"
+
+setWorkerUrl(mapWorkerUrl)
 
 const land = feature(
   landTopo as unknown as Topology,
