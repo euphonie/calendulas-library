@@ -13,7 +13,7 @@ const svo = "#1578a0"
 const panel = "#ffffff"
 const ui = `"DM Sans", "Segoe UI", sans-serif`
 
-export type HubArtId = "atlas" | "sunburst" | "dossier" | "compare" | "investigate" | "learn" | "sov" | "sprachbund" | "pair" | "tree"
+export type HubArtId = "atlas" | "sunburst" | "dossier" | "compare" | "investigate" | "learn" | "notebook" | "sov" | "sprachbund" | "pair" | "tree"
 
 function frame(label: string, inner: string): string {
   return `<svg class="hub-art" viewBox="0 0 320 176" role="img" aria-label="${label}"><title>${label}</title>${inner}</svg>`
@@ -163,6 +163,22 @@ export const hubArt: Record<HubArtId, string> = {
     <text x="228" y="68" fill="${cream}" font-size="12" font-family="${ui}">map</text>
     <text x="228" y="88" fill="${muted}" font-size="10" font-family="${ui}">atlas</text>
     <text x="16" y="158" fill="${ink}" font-size="12" font-family="${ui}">path · terms · what % means</text>
+  `,
+  ),
+  notebook: frame(
+    "A phrase specimen on a slip, opening the map",
+    `
+    <rect width="320" height="176" rx="16" fill="${ocean}"/>
+    <rect x="18" y="22" width="168" height="118" rx="16" fill="${panel}" stroke="${ink}" stroke-width="1.6"/>
+    <text x="32" y="48" fill="${muted}" font-size="11" font-family="${ui}">slip</text>
+    <text x="32" y="74" fill="${ink}" font-size="16" font-family="${ui}">Saqarik</text>
+    <text x="32" y="98" fill="${muted}" font-size="11" font-family="${ui}">K'iche' · quc</text>
+    <text x="32" y="120" fill="${cream}" font-size="11" font-family="${ui}">Latin · LTR</text>
+    <rect x="204" y="36" width="96" height="88" rx="16" fill="${panel}" stroke="${ink}" stroke-width="1.4"/>
+    <g transform="translate(208,48) scale(0.28)">
+      ${worldLand}
+    </g>
+    <text x="18" y="162" fill="${ink}" font-size="12" font-family="${ui}">phrase · language · map</text>
   `,
   ),
   sov: frame(

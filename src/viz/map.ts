@@ -7,12 +7,15 @@ import type { GeometryCollection, Topology } from "topojson-specification"
 import type { Feature, Language } from "../types.ts"
 import { colorForCodes } from "../format.ts"
 import { theme } from "../theme.ts"
+import { clampPoint, sanitizeLand } from "./land.ts"
 
 setWorkerUrl(mapWorkerUrl)
 
-const land = feature(
-  landTopo as unknown as Topology,
-  (landTopo as { objects: { land: GeometryCollection } }).objects.land,
+const land = sanitizeLand(
+  feature(
+    landTopo as unknown as Topology,
+    (landTopo as { objects: { land: GeometryCollection } }).objects.land,
+  ),
 )
 
 const STYLE: StyleSpecification = {
@@ -57,17 +60,22 @@ function labelsId(code: string): string {
 function geojson(langs: Language[], values: Record<string, string>) {
   return {
     type: "FeatureCollection" as const,
-    features: langs
-      .filter((l) => l.lat != null && l.lon != null)
-      .map((l) => ({
-        type: "Feature" as const,
-        geometry: { type: "Point" as const, coordinates: [l.lon!, l.lat!] },
-        properties: {
-          langId: l.id,
-          name: l.name,
-          val: values[l.id] != null ? String(values[l.id]) : UNCODED,
+    features: langs.flatMap((l) => {
+      if (l.lat == null || l.lon == null) return []
+      const pt = clampPoint(l.lat, l.lon)
+      if (!pt) return []
+      return [
+        {
+          type: "Feature" as const,
+          geometry: { type: "Point" as const, coordinates: pt },
+          properties: {
+            langId: l.id,
+            name: l.name,
+            val: values[l.id] != null ? String(values[l.id]) : UNCODED,
+          },
         },
-      })),
+      ]
+    }),
   }
 }
 
@@ -86,7 +94,8 @@ function ensureLand(map: MapLibreMap): void {
       source: "land",
       paint: {
         "fill-color": theme.land,
-        "fill-outline-color": theme.landLine,
+        "fill-opacity": 1,
+        "fill-antialias": true,
       },
     })
   }

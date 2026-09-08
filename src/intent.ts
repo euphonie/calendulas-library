@@ -101,6 +101,15 @@ export function matchIntent(query: string, langs: Language[]): Match[] {
   }
 
   const ranked = scoreTools(q)
+  if (/notebook|write a sentence|type a phrase|example sentence|phrase in|specimen/.test(q)) {
+    const nb = tools.find((t) => t.id === "notebook")
+    if (nb) {
+      return [
+        { tool: nb, score: 0.97, reason: "A phrase specimen in a named language.", href: href("/notebook") },
+        ...ranked.filter((m) => m.tool.id !== "notebook"),
+      ]
+    }
+  }
   if (/sunburst|feature rings?|spread by family|family or contact|inherited or/.test(q) || /genealog.*geograph|geograph.*genealog/.test(q)) {
     const sun = tools.find((t) => t.id === "sunburst")
     if (sun) {

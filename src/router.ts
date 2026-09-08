@@ -27,6 +27,9 @@ export function parseRoute(hash = window.location.hash): Route {
     return { view: "investigate", lesson }
   }
   if (path === "/learn") return { view: "learn" }
+  if (path === "/notebook") {
+    return { view: "notebook", lang: q.get("lang") || undefined, payload: q.get("p") || undefined }
+  }
   if (path === "/compare") return { view: "compare", a: q.get("a") || undefined, b: q.get("b") || undefined }
   return { view: "hub" }
 }

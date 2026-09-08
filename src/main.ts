@@ -12,6 +12,10 @@ import { renderLanguage } from "./views/language.ts"
 import { renderInvestigate } from "./views/investigate.ts"
 import { renderLearn } from "./views/learn.ts"
 import { renderCompare } from "./views/compare.ts"
+import { renderNotebook } from "./views/notebook.ts"
+import { KOFI_URL, kofiButton, kofiCup } from "./support.ts"
+import { getLocale, localePickerHtml, setLocale, t, type Locale, type MsgKey } from "./i18n.ts"
+import { icon, NAV_ICONS, type IconName } from "./icons.ts"
 
 const app = document.querySelector<HTMLDivElement>("#app")!
 
@@ -19,22 +23,28 @@ function shell(): string {
   return `
     <header class="site-header">
       <a class="brand" href="${href("/")}">
-        <span class="brand-mark">Calendula’s Library</span>
-        <span class="brand-sub">A bookshelf for understanding language</span>
+        ${icon("flower", 26)}
+        <span class="brand-text">
+          <span class="brand-mark">Calendula’s Library</span>
+          <span class="brand-sub">${t("brand.sub")}</span>
+        </span>
       </a>
-      <nav class="nav-pill" aria-label="Tools">
-        <a class="nav-link" data-nav="hub" href="${href("/")}">Hub</a>
-        <a class="nav-link" data-nav="atlas" href="${href("/atlas")}">Atlas</a>
-        <a class="nav-link" data-nav="sunburst" href="${href("/sunburst")}">Sunburst</a>
-        <a class="nav-link" data-nav="investigate" href="${href("/investigate/sov")}">Investigate</a>
-        <a class="nav-link" data-nav="learn" href="${href("/learn")}">Learn</a>
-        <a class="nav-link" data-nav="compare" href="${href("/compare")}">Compare</a>
+      <nav class="nav-pill" aria-label="${t("nav.aria")}">
+        <a class="nav-link" data-nav="hub" href="${href("/")}" title="${t("nav.hub")}">${icon("hub", 15)}<span class="nav-label">${t("nav.hub")}</span></a>
+        <a class="nav-link" data-nav="atlas" href="${href("/atlas")}" title="${t("nav.atlas")}">${icon("atlas", 15)}<span class="nav-label">${t("nav.atlas")}</span></a>
+        <a class="nav-link" data-nav="sunburst" href="${href("/sunburst")}" title="${t("nav.sunburst")}">${icon("sunburst", 15)}<span class="nav-label">${t("nav.sunburst")}</span></a>
+        <a class="nav-link" data-nav="investigate" href="${href("/investigate/sov")}" title="${t("nav.investigate")}">${icon("investigate", 15)}<span class="nav-label">${t("nav.investigate")}</span></a>
+        <a class="nav-link" data-nav="learn" href="${href("/learn")}" title="${t("nav.learn")}">${icon("learn", 15)}<span class="nav-label">${t("nav.learn")}</span></a>
+        <a class="nav-link" data-nav="notebook" href="${href("/notebook")}" title="${t("nav.notebook")}">${icon("notebook", 15)}<span class="nav-label">${t("nav.notebook")}</span></a>
+        <a class="nav-link" data-nav="compare" href="${href("/compare")}" title="${t("nav.compare")}">${icon("compare", 15)}<span class="nav-label">${t("nav.compare")}</span></a>
       </nav>
       <div class="header-end">
-        <a class="nav-link kiche-link" data-nav="language" href="${href("/language/kich1262")}">K'iche'</a>
+        ${kofiButton()}
+        ${localePickerHtml()}
         <form class="search" autocomplete="off">
-          <label class="visually-hidden" for="q">Search languages</label>
-          <input id="q" type="search" placeholder="Search languages" />
+          ${icon("search", 16)}
+          <label class="visually-hidden" for="q">${t("search.languages")}</label>
+          <input id="q" type="search" placeholder="${t("search.languages")}" />
           <div id="hits" class="hits" hidden></div>
         </form>
       </div>
@@ -62,20 +72,77 @@ async function render(): Promise<void> {
     else if (route.view === "language") teardown = await renderLanguage(main, route.id)
     else if (route.view === "investigate") teardown = await renderInvestigate(main, route.lesson)
     else if (route.view === "learn") teardown = await renderLearn(main)
+    else if (route.view === "notebook") teardown = await renderNotebook(main, langs, route)
     else teardown = await renderCompare(main, route.a, route.b)
   } catch (err) {
-    main.innerHTML = `<section class="page"><h1>Could not load this view</h1><p class="muted">${err instanceof Error ? err.message : String(err)}</p></section>`
+    main.innerHTML = `<section class="page"><h1>${t("error.load")}</h1><p class="muted">${err instanceof Error ? err.message : String(err)}</p></section>`
   }
+}
+
+function paintFooter(citations: string): void {
+  document.querySelector("#footer")!.innerHTML =
+    `<p class="kofi-foot"><a href="${KOFI_URL}" target="_blank" rel="noopener noreferrer">${kofiCup()}${t("kofi.support")}</a></p>` + citations
+}
+
+const NAV_KEYS: Record<string, MsgKey> = {
+  hub: "nav.hub",
+  atlas: "nav.atlas",
+  sunburst: "nav.sunburst",
+  investigate: "nav.investigate",
+  learn: "nav.learn",
+  notebook: "nav.notebook",
+  compare: "nav.compare",
+}
+
+function applyChrome(citations: string): void {
+  document.documentElement.lang = getLocale()
+  const sub = document.querySelector(".brand-sub")
+  if (sub) sub.textContent = t("brand.sub")
+  document.querySelector(".nav-pill")?.setAttribute("aria-label", t("nav.aria"))
+  document.querySelectorAll<HTMLAnchorElement>(".nav-link[data-nav]").forEach((link) => {
+    const key = NAV_KEYS[link.dataset.nav ?? ""]
+    if (!key) return
+    const name = t(key)
+    const ic = NAV_ICONS[link.dataset.nav ?? ""] as IconName | undefined
+    link.title = name
+    link.innerHTML = `${ic ? icon(ic, 15) : ""}<span class="nav-label">${name}</span>`
+  })
+  const q = document.querySelector<HTMLInputElement>("#q")
+  const qLabel = document.querySelector("label[for='q']")
+  if (q) q.placeholder = t("search.languages")
+  if (qLabel) qLabel.textContent = t("search.languages")
+  const kofiStrong = document.querySelector(".kofi-btn-copy strong")
+  const kofiSub = document.querySelector(".kofi-btn-sub")
+  if (kofiStrong) kofiStrong.textContent = t("kofi.buy")
+  if (kofiSub) kofiSub.textContent = t("kofi.on")
+  const locHidden = document.querySelector(".locale-picker .visually-hidden")
+  const locSelect = document.querySelector<HTMLSelectElement>("#ui-lang")
+  if (locHidden) locHidden.textContent = t("locale.label")
+  if (locSelect) locSelect.setAttribute("aria-label", t("locale.label"))
+  paintFooter(citations)
+}
+
+function bindLocalePicker(citations: string): void {
+  const select = document.querySelector<HTMLSelectElement>("#ui-lang")
+  if (!select) return
+  select.value = getLocale()
+  select.addEventListener("change", () => {
+    setLocale(select.value as Locale)
+    applyChrome(citations)
+    void render()
+  })
 }
 
 async function boot(): Promise<void> {
   applyChartTheme()
+  document.documentElement.lang = getLocale()
   app.innerHTML = shell()
   const [loadedLangs, stats] = await Promise.all([languages(), loadStats()])
   langs = loadedLangs
-  document.querySelector("#footer")!.innerHTML = Object.values(stats.datasets)
+  const citations = Object.values(stats.datasets)
     .map((d) => `<p>${d.citation}</p>`)
     .join("")
+  paintFooter(citations)
 
   const input = document.querySelector<HTMLInputElement>("#q")!
   const hits = document.querySelector<HTMLElement>("#hits")!
@@ -95,6 +162,8 @@ async function boot(): Promise<void> {
     if (!(e.target instanceof Node)) return
     if (!hits.contains(e.target) && e.target !== input) hits.hidden = true
   })
+
+  bindLocalePicker(citations)
 
   window.addEventListener("hashchange", () => void render())
   if (!window.location.hash) window.location.hash = "#/"

@@ -5,14 +5,16 @@ import { renderHeatmap } from "../viz/heatmap.ts"
 import { createLanguageMap } from "../viz/map.ts"
 import { neighbors as loadNeighbors, languages as loadLangs } from "../data.ts"
 import { QUALITATIVE, theme } from "../theme.ts"
+import { t, type MsgKey } from "../i18n.ts"
+import { icon, withIcon, type IconName } from "../icons.ts"
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Legend, Tooltip)
 
-const LESSONS = [
-  { id: "sov", title: "Why are SOV languages geographically common?" },
-  { id: "postpositions", title: "Which features correlate with postpositions?" },
-  { id: "neighbors", title: "How similar are unrelated neighboring languages?" },
-  { id: "genealogy", title: "How much does genealogy explain typological similarity?" },
+const LESSONS: { id: string; titleKey: MsgKey; icon: IconName }[] = [
+  { id: "sov", titleKey: "inv.sov", icon: "atlas" },
+  { id: "postpositions", titleKey: "inv.post", icon: "heatmap" },
+  { id: "neighbors", titleKey: "inv.neighbors", icon: "neighbors" },
+  { id: "genealogy", titleKey: "inv.genealogy", icon: "tree" },
 ]
 
 export async function renderInvestigate(root: HTMLElement, lesson: string): Promise<() => void> {
@@ -20,7 +22,7 @@ export async function renderInvestigate(root: HTMLElement, lesson: string): Prom
   root.innerHTML = `
     <section class="page investigate">
       <nav class="lesson-nav">
-        ${LESSONS.map((l) => `<a class="${l.id === current ? "on" : ""}" href="${href(`/investigate/${l.id}`)}">${l.title}</a>`).join("")}
+        ${LESSONS.map((l) => `<a class="${l.id === current ? "on" : ""}" href="${href(`/investigate/${l.id}`)}">${withIcon(l.icon, t(l.titleKey), 18)}</a>`).join("")}
       </nav>
       <div id="lesson"></div>
     </section>
@@ -43,11 +45,11 @@ async function sovLesson(root: HTMLElement): Promise<() => void> {
   const codes = [...new Set(stats.sovMacroarea.areas.flatMap((a) => Object.keys(a.codes)))]
   root.innerHTML = `
     <article>
-      <h1>SOV on the map</h1>
-      <p>Subject–object–verb (SOV) is the most widely attested dominant order in WALS. It is especially dense across a belt from South Asia through Inner Asia. That is geography plus large families (for example Indo-Iranian, Turkic, Dravidian), not a law of nature. Click the map, then compare macroareas in the chart.</p>
+      <h1 class="with-icon">${icon("atlas", 28)}${t("inv.sov.h")}</h1>
+      <p>${t("inv.sov.p")}</p>
       <div class="atlas-map lesson-map" id="map"></div>
       <canvas id="sov-chart" height="180"></canvas>
-      <p class="muted">Uncoded languages are grey. WALS 81A does not sample every language equally; treat the bars as a teaching sketch. See also <a href="${feat.url}" target="_blank" rel="noreferrer">WALS 81A</a>.</p>
+      <p class="muted">${t("inv.sov.note", { link: `<a href="${feat.url}" target="_blank" rel="noreferrer">WALS 81A</a>` })}</p>
     </article>
   `
   const handle = createLanguageMap(root.querySelector("#map")!, langs, (id) => setRoute(`/language/${id}`))
@@ -77,8 +79,8 @@ async function postpositionLesson(root: HTMLElement): Promise<() => void> {
   const pairIds = ["wals:81A", "wals:87A", "wals:88A"]
   root.innerHTML = `
     <article>
-      <h1>Postpositions and harmonic word order</h1>
-      <p>Languages that put adpositions after the noun (postpositions) tend to put the verb last and the adjective before or after the noun in patterned ways. Dryer and others call this harmonic word order. The heatmaps count languages coded for both features. Cramér’s V is a 0–1 association strength; it is not a causal proof.</p>
+      <h1 class="with-icon">${icon("heatmap", 28)}${t("inv.post.h")}</h1>
+      <p>${t("inv.post.p")}</p>
       <div id="heatmaps" class="heat-grid"></div>
     </article>
   `
@@ -89,8 +91,8 @@ async function postpositionLesson(root: HTMLElement): Promise<() => void> {
     if (!cell) continue
     const wrap = document.createElement("section")
     wrap.className = "card"
-    wrap.innerHTML = `<h3>${focus.sourceId} × ${other.sourceId} ${other.name}</h3>
-      <p class="meta">n = ${cell.n} · Cramér’s V = ${cell.cramersV}</p>
+    wrap.innerHTML = `<h3 class="with-icon">${icon("heatmap", 18)}${focus.sourceId} × ${other.sourceId} ${other.name}</h3>
+      <p class="meta">${t("inv.heatMeta", { n: cell.n, v: cell.cramersV })}</p>
       <div class="heat-target"></div>
       <p class="muted">${other.blurb}</p>`
     box.append(wrap)
@@ -104,10 +106,10 @@ async function neighborLesson(root: HTMLElement): Promise<() => void> {
   const seeds = stats.sprachbundTours.filter((t) => byId.has(t.seed))
   root.innerHTML = `
     <article>
-      <h1>Neighbors versus relatives</h1>
-      <p>A <em>Sprachbund</em> is a region where unrelated languages share structure through contact. Pick a tour, then compare genealogical closeness with geographic neighbors who are <em>not</em> in the same family.</p>
+      <h1 class="with-icon">${icon("neighbors", 28)}${t("inv.nb.h")}</h1>
+      <p>${t("inv.nb.p")}</p>
       <div class="tour-picks">
-        ${seeds.map((t) => `<button class="btn-ghost" data-seed="${t.seed}">${t.name}</button>`).join("")}
+        ${seeds.map((item) => `<button class="btn-ghost" data-seed="${item.seed}">${withIcon("atlas", item.name)}</button>`).join("")}
       </div>
       <div id="tour"></div>
     </article>
@@ -118,17 +120,18 @@ async function neighborLesson(root: HTMLElement): Promise<() => void> {
     const spec = seeds.find((t) => t.seed === seed)
     const n = neighAll[seed]
     tour.innerHTML = `
-      <p>${spec?.blurb ?? ""} <a href="${href(`/language/${lang.id}`)}">Open ${lang.name}</a></p>
+      <p>${spec?.blurb ?? ""}</p>
+      <p class="row-links"><a href="${href(`/language/${lang.id}`)}">${withIcon("profile", t("inv.nb.open", { name: lang.name }))}</a></p>
       <div class="split">
-        <section class="card"><h3>Structural neighbors</h3>
+        <section class="card"><h3 class="with-icon">${icon("neighbors", 18)}${t("inv.nb.struct")}</h3>
           <ol class="neighbors">${(n?.combined ?? [])
             .slice(0, 8)
             .map(
               (r) =>
-                `<li><a href="${href(`/language/${r.id}`)}">${r.name}</a> <span class="score">${Math.round((r.score ?? 0) * 100)}%</span> <span class="muted">${r.sameFamily ? "same family" : "different family"} · ${r.nShared} features</span></li>`,
+                `<li><a href="${href(`/language/${r.id}`)}">${r.name}</a> <span class="score">${Math.round((r.score ?? 0) * 100)}%</span> <span class="muted">${r.sameFamily ? t("sameFamily") : t("diffFamily")} · ${t("inv.nb.feats", { n: r.nShared })}</span></li>`,
             )
             .join("")}</ol></section>
-        <section class="card"><h3>Unrelated geographic neighbors</h3>
+        <section class="card"><h3 class="with-icon">${icon("atlas", 18)}${t("inv.nb.geo")}</h3>
           <ol class="neighbors">${(n?.geoUnrelated ?? [])
             .slice(0, 8)
             .map(
@@ -150,23 +153,23 @@ async function genealogyLesson(root: HTMLElement): Promise<() => void> {
   const stats = await loadStats()
   root.innerHTML = `
     <article>
-      <h1>Genealogy versus typology</h1>
-      <p>Related languages should look alike if features are inherited. Contact and chance also produce similarity. These bars use each language’s top combined-feature neighbors (not all pairs), so large families and missing data bias the picture.</p>
+      <h1 class="with-icon">${icon("tree", 28)}${t("inv.gen.h")}</h1>
+      <p>${t("inv.gen.p")}</p>
       <canvas id="gen-chart" height="160"></canvas>
       <canvas id="dist-chart" height="160"></canvas>
       <p class="notice">${stats.genealogy.note}</p>
     </article>
   `
   const labels: Record<string, string> = {
-    sameGenus: "Same WALS genus",
-    sameFamily: "Same family, different genus",
-    differentFamily: "Different family",
+    sameGenus: t("inv.gen.sameGenus"),
+    sameFamily: t("inv.gen.sameFamily"),
+    differentFamily: t("inv.gen.diffFamily"),
   }
   const a = new Chart(root.querySelector<HTMLCanvasElement>("#gen-chart")!, {
     type: "bar",
     data: {
       labels: stats.genealogy.byGenealogy.map((r) => `${labels[r.key] ?? r.key} (n=${r.n})`),
-      datasets: [{ label: "Mean similarity of top neighbors", data: stats.genealogy.byGenealogy.map((r) => r.mean), backgroundColor: theme.yellow }],
+      datasets: [{ label: t("inv.gen.meanTop"), data: stats.genealogy.byGenealogy.map((r) => r.mean), backgroundColor: theme.yellow }],
     },
     options: { plugins: { legend: { display: false } }, scales: { y: { suggestedMin: 0, suggestedMax: 1 } } },
   })
@@ -174,7 +177,7 @@ async function genealogyLesson(root: HTMLElement): Promise<() => void> {
     type: "bar",
     data: {
       labels: stats.genealogy.byDistance.map((r) => `${r.key} (n=${r.n})`),
-      datasets: [{ label: "Mean similarity by distance", data: stats.genealogy.byDistance.map((r) => r.mean), backgroundColor: theme.rust }],
+      datasets: [{ label: t("inv.gen.meanDist"), data: stats.genealogy.byDistance.map((r) => r.mean), backgroundColor: theme.rust }],
     },
     options: { plugins: { legend: { display: false } }, scales: { y: { suggestedMin: 0, suggestedMax: 1 } } },
   })

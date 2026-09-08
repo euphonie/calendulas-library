@@ -1,5 +1,7 @@
 import { codeLabel, featureIndex, languageMap, searchLanguages, vectors as loadVectors, languages as loadLangs } from "../data.ts"
 import { href, setRoute } from "../router.ts"
+import { t } from "../i18n.ts"
+import { icon, withIcon } from "../icons.ts"
 
 export async function renderCompare(root: HTMLElement, aId?: string, bId?: string): Promise<() => void> {
   const [langs, byId, index, vecs] = await Promise.all([loadLangs(), languageMap(), featureIndex(), loadVectors()])
@@ -7,12 +9,12 @@ export async function renderCompare(root: HTMLElement, aId?: string, bId?: strin
   const b = bId ? byId.get(bId) : undefined
   root.innerHTML = `
     <section class="page">
-      <h1>Compare two languages</h1>
+      <h1 class="with-icon">${icon("compare", 28)}${t("compare.title")}</h1>
       <div class="compare-picks">
-        <label>Language A <input id="a" list="lang-list" value="${a?.name ?? ""}" /></label>
-        <label>Language B <input id="b" list="lang-list" value="${b?.name ?? ""}" /></label>
+        <label class="field"><span>${icon("language")}${t("compare.a")}</span> <input id="a" list="lang-list" value="${a?.name ?? ""}" /></label>
+        <label class="field"><span>${icon("language")}${t("compare.b")}</span> <input id="b" list="lang-list" value="${b?.name ?? ""}" /></label>
         <datalist id="lang-list"></datalist>
-        <button id="go" type="button" class="btn">Compare</button>
+        <button id="go" type="button" class="btn">${withIcon("compare", t("compare.go"))}</button>
       </div>
       <div id="table"></div>
     </section>
@@ -31,7 +33,7 @@ export async function renderCompare(root: HTMLElement, aId?: string, bId?: strin
 
   const paint = () => {
     if (!a || !b) {
-      root.querySelector("#table")!.innerHTML = `<p class="muted">Pick two languages. Try K'iche' and Kaqchikel.</p>`
+      root.querySelector("#table")!.innerHTML = `<p class="muted">${t("compare.pick")}</p>`
       return
     }
     const va = vecs[a.id] || {}
@@ -55,9 +57,13 @@ export async function renderCompare(root: HTMLElement, aId?: string, bId?: strin
       </tr>`
     })
     root.querySelector("#table")!.innerHTML = `
-      <p><a href="${href(`/language/${a.id}`)}">${a.name}</a> vs <a href="${href(`/language/${b.id}`)}">${b.name}</a>
-      — agree on ${agree} of ${both} features coded in both.</p>
-      <table class="data"><thead><tr><th>Feature</th><th>${a.name}</th><th>${b.name}</th></tr></thead>
+      <p>${t("compare.agree", {
+        a: `<a href="${href(`/language/${a.id}`)}">${a.name}</a>`,
+        b: `<a href="${href(`/language/${b.id}`)}">${b.name}</a>`,
+        agree,
+        both,
+      })}</p>
+      <table class="data"><thead><tr><th>${t("compare.feature")}</th><th>${a.name}</th><th>${b.name}</th></tr></thead>
       <tbody>${rows.join("")}</tbody></table>
     `
   }

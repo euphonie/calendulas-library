@@ -4,6 +4,8 @@ import { href, setRoute } from "../router.ts"
 import { colorForCodes } from "../format.ts"
 import { createLanguageMap, type MapHandle } from "../viz/map.ts"
 import { collectLeaves, findFamilyNode, renderSunburst } from "../viz/sunburst.ts"
+import { t } from "../i18n.ts"
+import { icon, withIcon } from "../icons.ts"
 const DEFAULT_FAMILY = "indo1319"
 const DEFAULT_FEATURE = "wals:81A"
 
@@ -20,7 +22,7 @@ export async function renderSunburstView(
   const familyId = pack.trees[opts.family ?? ""] ? opts.family! : pack.trees[DEFAULT_FAMILY] ? DEFAULT_FAMILY : familyList[0]?.id
   const tree = familyId ? pack.trees[familyId] : undefined
   if (!familyId || !tree) {
-    root.innerHTML = `<section class="page"><h1>No family trees</h1><p class="muted">Rebuild the data with the ETL script.</p></section>`
+    root.innerHTML = `<section class="page"><h1>${t("sunburst.noTrees")}</h1><p class="muted">${t("sunburst.rebuild")}</p></section>`
     return () => {}
   }
   const feature = index.features.find((f) => f.id === (opts.feature || DEFAULT_FEATURE)) ?? index.features.find((f) => f.id === index.defaultFeature)!
@@ -29,23 +31,23 @@ export async function renderSunburstView(
   root.innerHTML = `
     <section class="sunburst-page">
       <aside class="sunburst-side">
-        <p class="kicker">Genealogy × geography</p>
-        <h1>WALS Sunburst Explorer</h1>
-        <p class="blurb">Inner rings are Glottolog genealogy. The outer ring is a WALS feature. Click a family to filter the map; limit the tree to the current map view to ask whether a value is inherited or areal.</p>
-        <label class="field">Family
+        <p class="kicker with-icon">${icon("sunburst", 16)}${t("sunburst.kicker")}</p>
+        <h1 class="with-icon">${icon("sunburst", 28)}${t("sunburst.title")}</h1>
+        <p class="blurb">${t("sunburst.blurb")}</p>
+        <label class="field"><span>${icon("tree")}${t("sunburst.family")}</span>
           <select id="family-select"></select>
         </label>
-        <label class="field">Feature ring
+        <label class="field"><span>${icon("feature")}${t("sunburst.featureRing")}</span>
           <select id="feature-select"></select>
         </label>
         <p class="meta" id="sunburst-status"></p>
         <p class="row-links">
-          <button type="button" class="btn-ghost" id="geo-filter">Filter tree to map view</button>
-          <button type="button" class="btn-ghost" id="clear-filters">Clear filters</button>
+          <button type="button" class="btn-ghost" id="geo-filter">${withIcon("filter", t("sunburst.geoFilter"))}</button>
+          <button type="button" class="btn-ghost" id="clear-filters">${withIcon("clear", t("sunburst.clear"))}</button>
         </p>
         <div class="legend" id="legend"></div>
-        <p class="muted">After Mayer’s WALS Sunburst Explorer / World’s Languages Explorer: linked sunburst + map, with feature rings on the genealogy.</p>
-        <p class="row-links"><a href="${href(`/language/kich1262`)}">Open a dossier</a><a href="${href("/atlas")}">Atlas map only</a></p>
+        <p class="muted">${t("sunburst.credit")}</p>
+        <p class="row-links"><a href="${href(`/language/kich1262`)}">${withIcon("profile", t("sunburst.dossier"))}</a><a href="${href("/atlas")}">${withIcon("atlas", t("sunburst.atlasOnly"))}</a></p>
       </aside>
       <div class="sunburst-stage">
         <div class="sunburst-wrap" id="sunburst"></div>
@@ -67,7 +69,7 @@ export async function renderSunburstView(
   const curriculum = index.features.filter((f) => f.curriculum)
   const rest = index.features.filter((f) => f.source === "wals" && !f.curriculum)
   for (const [label, items] of [
-    ["Start here", curriculum],
+    [t("startHere"), curriculum],
     ["WALS", rest],
   ] as [string, Feature[]][]) {
     const g = document.createElement("optgroup")
@@ -103,7 +105,7 @@ export async function renderSunburstView(
       return lang && lang.lat != null && lang.lon != null ? [lang] : []
     })
     root.querySelector("#sunburst-status")!.textContent =
-      `${node.name} · ${visible.length} languages in view` + (geoIds ? " (map filter on)" : "")
+      t("sunburst.status", { name: node.name, n: visible.length }) + (geoIds ? t("sunburst.mapFilter") : "")
     const present = [...new Set(cladeLeaves.map((id) => values[id]).filter(Boolean))]
     const colors = colorForCodes(present)
     root.querySelector("#legend")!.innerHTML = present

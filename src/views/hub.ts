@@ -3,58 +3,45 @@ import { href, setRoute } from "../router.ts"
 import { matchIntent } from "../intent.ts"
 import { tools } from "../tools.ts"
 import { hubArt, type HubArtId } from "../viz/hub-art.ts"
+import { t, toolMsg } from "../i18n.ts"
+import { icon, TOOL_ICONS, withIcon } from "../icons.ts"
 
-const useCases: { intent: string; art: HubArtId; learn: string }[] = [
-  {
-    intent: "Where are SOV languages?",
-    art: "sov",
-    learn: "A word-order map: the Eurasian SOV belt versus other pockets, and what stays grey.",
-  },
-  {
-    intent: "What is a Sprachbund?",
-    art: "sprachbund",
-    learn: "Unrelated neighbors can share structure through contact — glossary first, then a tour.",
-  },
-  {
-    intent: "Compare K'iche' and Kaqchikel",
-    art: "pair",
-    learn: "A feature-by-feature score: what matches, what does not, on how many overlapping codes.",
-  },
-  {
-    intent: "Did SOV spread by family or contact?",
-    art: "sunburst",
-    learn: "Sunburst rings show inheritance; the linked map shows geography.",
-  },
+const useCases: { intentKey: "use.sov.intent" | "use.bund.intent" | "use.pair.intent" | "use.sun.intent"; learnKey: "use.sov.learn" | "use.bund.learn" | "use.pair.learn" | "use.sun.learn"; art: HubArtId }[] = [
+  { intentKey: "use.sov.intent", art: "sov", learnKey: "use.sov.learn" },
+  { intentKey: "use.bund.intent", art: "sprachbund", learnKey: "use.bund.learn" },
+  { intentKey: "use.pair.intent", art: "pair", learnKey: "use.pair.learn" },
+  { intentKey: "use.sun.intent", art: "sunburst", learnKey: "use.sun.learn" },
 ]
 
 export async function renderHub(root: HTMLElement, langs: Language[], initial = ""): Promise<() => void> {
   root.innerHTML = `
     <section class="hub">
       <div class="hub-hero">
-        <p class="kicker">Calendula’s knowledge, arranged by question</p>
-        <h1>What do you want to look up?</h1>
-        <p class="blurb">This library is Calendula’s set of notes for understanding how languages work. Ask in plain language, or take a volume from the shelf — the atlas is only one book.</p>
+        <p class="kicker with-icon">${icon("shelf", 16)}${t("hub.kicker")}</p>
+        <h1>${t("hub.title")}</h1>
+        <p class="blurb">${t("hub.blurb")}</p>
         <form class="intent-pill" id="intent-form">
-          <label class="visually-hidden" for="intent">Intent</label>
-          <input id="intent" type="search" name="intent" value="${escapeAttr(initial)}" placeholder="Where are SOV languages?" />
-          <button class="btn" type="submit">Open</button>
+          ${icon("search", 18)}
+          <label class="visually-hidden" for="intent">${t("hub.intent")}</label>
+          <input id="intent" type="search" name="intent" value="${escapeAttr(initial)}" placeholder="${t("hub.placeholder")}" />
+          <button class="btn" type="submit">${withIcon("open", t("hub.open"))}</button>
         </form>
-        <nav class="hub-jumps" aria-label="Jump to a shelf">
-          ${tools.map((t) => `<a class="hub-jump" href="${href(t.href)}">${t.name}</a>`).join("")}
+        <nav class="hub-jumps" aria-label="${t("hub.jump")}">
+          ${tools.map((tool) => `<a class="hub-jump" href="${href(tool.href)}">${withIcon(TOOL_ICONS[tool.id] ?? "open", toolMsg(tool.id, "name"))}</a>`).join("")}
         </nav>
       </div>
       <div class="hub-matches" id="matches"></div>
       <div class="hub-band">
         <div class="page">
-          <h2>Start with a question</h2>
-          <p class="blurb use-lead">Each card is a use case. The picture is the payoff.</p>
+          <h2 class="with-icon">${icon("question", 22)}${t("hub.start")}</h2>
+          <p class="blurb use-lead">${t("hub.useLead")}</p>
           <div class="use-grid">
             ${useCases
               .map(
-                (c) => `<button type="button" class="card use-card" data-ex="${escapeAttr(c.intent)}">
+                (c) => `<button type="button" class="card use-card" data-ex="${escapeAttr(t(c.intentKey))}">
                   ${hubArt[c.art]}
-                  <h3>${c.intent}</h3>
-                  <p>${c.learn}</p>
+                  <h3>${t(c.intentKey)}</h3>
+                  <p>${t(c.learnKey)}</p>
                 </button>`,
               )
               .join("")}
@@ -63,17 +50,17 @@ export async function renderHub(root: HTMLElement, langs: Language[], initial = 
       </div>
       <div class="hub-tools">
         <div class="page">
-          <h2>On the shelf</h2>
-          <p class="blurb use-lead">Open a volume when you already know the kind of question.</p>
+          <h2 class="with-icon">${icon("shelf", 22)}${t("hub.shelf")}</h2>
+          <p class="blurb use-lead">${t("hub.shelfLead")}</p>
           <div class="tool-grid">
             ${tools
               .map(
-                (t) => `<a class="card tool-card" href="${href(t.href)}">
-                  ${hubArt[t.id]}
+                (tool) => `<a class="card tool-card" href="${href(tool.href)}">
+                  ${hubArt[tool.id]}
                   <div class="tool-copy">
-                    <p class="kicker">${t.tag}</p>
-                    <h3>${t.name}</h3>
-                    <p>${t.blurb}</p>
+                    <p class="kicker with-icon">${icon(TOOL_ICONS[tool.id] ?? "open")}${toolMsg(tool.id, "tag")}</p>
+                    <h3>${toolMsg(tool.id, "name")}</h3>
+                    <p>${toolMsg(tool.id, "blurb")}</p>
                   </div>
                 </a>`,
               )
@@ -95,20 +82,20 @@ export async function renderHub(root: HTMLElement, langs: Language[], initial = 
     }
     const [best, ...rest] = ranked
     if (!best) {
-      matches.innerHTML = `<p class="muted">No tool ranked for that intent. Pick a question or a tool.</p>`
+      matches.innerHTML = `<p class="muted">${t("hub.noMatch")}</p>`
       return
     }
     matches.innerHTML = `
       <article class="card best-match">
         ${hubArt[best.tool.id]}
-        <p class="kicker">Best match · ${Math.round(best.score * 100)}%</p>
-        <h2>${best.tool.name}</h2>
+        <p class="kicker with-icon">${withIcon(TOOL_ICONS[best.tool.id] ?? "open", `${t("hub.bestMatch")} · ${Math.round(best.score * 100)}%`)}</p>
+        <h2 class="with-icon">${withIcon(TOOL_ICONS[best.tool.id] ?? "open", toolMsg(best.tool.id, "name"), 22)}</h2>
         <p>${best.reason}</p>
-        <p class="learn-label">You can learn</p>
+        <p class="learn-label with-icon">${icon("learn", 16)}${t("hub.youCanLearn")}</p>
         <ul class="learn-list">
-          ${best.tool.learns.map((line) => `<li>${line}</li>`).join("")}
+          ${(["learn1", "learn2", "learn3"] as const).map((part) => `<li>${toolMsg(best.tool.id, part)}</li>`).join("")}
         </ul>
-        <p><a class="btn" href="${best.href}">Open ${best.tool.name}</a></p>
+        <p><a class="btn" href="${best.href}">${withIcon("open", t("hub.openTool", { name: toolMsg(best.tool.id, "name") }))}</a></p>
       </article>
       ${
         rest.length
@@ -116,7 +103,7 @@ export async function renderHub(root: HTMLElement, langs: Language[], initial = 
               .slice(0, 3)
               .map(
                 (m) =>
-                  `<li><a href="${m.href}">${m.tool.name}</a> <span class="score">${Math.round(m.score * 100)}%</span> <span class="muted">${m.reason}</span></li>`,
+                  `<li><a class="hub-jump" href="${m.href}">${withIcon(TOOL_ICONS[m.tool.id] ?? "open", toolMsg(m.tool.id, "name"))}</a> <span class="score">${Math.round(m.score * 100)}%</span> <span class="muted">${m.reason}</span></li>`,
               )
               .join("")}</ol>`
           : ""

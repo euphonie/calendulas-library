@@ -13,18 +13,12 @@ import { pct } from "../format.ts"
 import { theme } from "../theme.ts"
 import type { Feature, Neighbor } from "../types.ts"
 import { renderTree } from "../viz/tree.ts"
+import { t, type MsgKey } from "../i18n.ts"
+import { icon, withIcon, type IconName } from "../icons.ts"
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend)
 
-const HERO_KEYS = [
-  ["order", "Word order"],
-  ["adpositions", "Adpositions"],
-  ["tone", "Tone"],
-  ["gender", "Gender"],
-  ["case", "Case"],
-  ["adjNoun", "Adjective–noun"],
-  ["consonants", "Consonant inventory"],
-] as const
+const HERO_KEYS = ["order", "adpositions", "tone", "gender", "case", "adjNoun", "consonants"] as const
 
 function prune(tree: import("../types.ts").FamilyNode, selectedId: string) {
   const size = (n: typeof tree): number => 1 + n.children.reduce((s, c) => s + size(c), 0)
@@ -49,7 +43,7 @@ function prune(tree: import("../types.ts").FamilyNode, selectedId: string) {
           ? [
               {
                 id: `${n.id}-more`,
-                name: `+${n.children.filter((c) => !onPath.has(c.id)).length} other branches`,
+                name: t("lang.moreBranches", { n: n.children.filter((c) => !onPath.has(c.id)).length }),
                 children: [],
               },
             ]
@@ -59,16 +53,16 @@ function prune(tree: import("../types.ts").FamilyNode, selectedId: string) {
   return clip(tree)
 }
 
-function neighborList(title: string, rows: Neighbor[], empty: string): string {
-  if (!rows.length) return `<section class="card"><h3>${title}</h3><p class="muted">${empty}</p></section>`
-  return `<section class="card"><h3>${title}</h3>
+function neighborList(title: string, rows: Neighbor[], empty: string, ic: IconName): string {
+  if (!rows.length) return `<section class="card"><h3 class="with-icon">${icon(ic, 18)}${title}</h3><p class="muted">${empty}</p></section>`
+  return `<section class="card"><h3 class="with-icon">${icon(ic, 18)}${title}</h3>
     <ol class="neighbors">
       ${rows
         .map(
           (n) => `<li>
             <a href="${href(`/language/${n.id}`)}">${n.name}</a>
             <span class="score">${n.score == null ? `${n.distanceKm} km` : pct(n.score)}</span>
-            <span class="muted">${n.nShared ? `on ${n.nShared}` : ""}${n.sameFamily ? " · same family" : ""}</span>
+            <span class="muted">${n.nShared ? t("lang.onN", { n: n.nShared }) : ""}${n.sameFamily ? ` · ${t("sameFamily")}` : ""}</span>
           </li>`,
         )
         .join("")}
@@ -86,56 +80,61 @@ export async function renderLanguage(root: HTMLElement, id: string): Promise<() 
   ])
   const lang = byId.get(id)
   if (!lang) {
-    root.innerHTML = `<section class="page"><h1>Language not found</h1><p>No record for <code>${id}</code>.</p></section>`
+    root.innerHTML = `<section class="page"><h1>${t("lang.notFound")}</h1><p>${t("lang.noRecord", { id: `<code>${id}</code>` })}</p></section>`
     return () => {}
   }
   const features = new Map(index.features.map((f) => [f.id, f]))
   const vec = vecs[lang.id] ?? {}
   const neigh = neighAll[lang.id] ?? { wals: [], grambank: [], combined: [], geoUnrelated: [] }
-  const heroRows = HERO_KEYS.map(([key, label]) => {
+  const heroRows = HERO_KEYS.map((key) => {
     const fid = index.hero[key]
     const feat = features.get(fid)
-    return { label, feat, value: feat ? codeLabel(feat, vec[fid]) : "—" }
+    return { label: t(`hero.${key}` as MsgKey), feat, value: feat ? codeLabel(feat, vec[fid]) : "—" }
   })
 
   const walsFeats = index.features.filter((f) => f.source === "wals" && vec[f.id])
   const gbFeats = index.features.filter((f) => f.source === "grambank" && vec[f.id])
 
+  const walsBit =
+    lang.walsName && lang.walsName !== lang.name
+      ? t("lang.walsNamed", { name: lang.walsName, id: lang.walsId ?? "" })
+      : lang.walsId
+        ? t("lang.walsId", { id: lang.walsId })
+        : t("notInWals")
+
   root.innerHTML = `
     <section class="page language-page">
       <header class="hero-card">
-        <p class="kicker">${lang.familyName ?? "Ungrouped"} · ${lang.iso ?? "no ISO"} · ${lang.macroarea ?? ""}</p>
+        <p class="kicker with-icon">${icon("profile", 16)}${lang.familyName ?? t("ungrouped")} · ${lang.iso ?? t("noIso")} · ${lang.macroarea ?? ""}</p>
         <h1>${lang.name}</h1>
-        <p class="meta">${lang.walsName && lang.walsName !== lang.name ? `WALS: ${lang.walsName} (${lang.walsId})` : lang.walsId ? `WALS ${lang.walsId}` : "Not in WALS"}
-        · Glottocode ${lang.id}
-        · ${lang.walsN} WALS features · ${lang.grambankN} Grambank features</p>
+        <p class="meta">${t("lang.meta", { wals: walsBit, id: lang.id, walsN: lang.walsN, gb: lang.grambankN })}</p>
         <dl class="hero-grid">
           ${heroRows.map((r) => `<div><dt>${r.label}</dt><dd>${r.value}</dd></div>`).join("")}
         </dl>
-        ${lang.walsN < stats.minOverlap.wals ? `<p class="notice">WALS coverage is sparse here (${lang.walsN} features; neighbors need ≥${stats.minOverlap.wals} overlapping codes). Grambank similarity is the more stable signal for this language.</p>` : ""}
+        ${lang.walsN < stats.minOverlap.wals ? `<p class="notice">${t("lang.sparse", { n: lang.walsN, min: stats.minOverlap.wals })}</p>` : ""}
       </header>
       <div class="tabs" role="tablist">
-        <button class="tab on" data-tab="wals">WALS profile</button>
-        <button class="tab" data-tab="grambank">Grambank profile</button>
-        <button class="tab" data-tab="tree">Family tree</button>
-        <button class="tab" data-tab="near">Nearest languages</button>
+        <button class="tab on" data-tab="wals">${withIcon("feature", t("lang.tabWals"))}</button>
+        <button class="tab" data-tab="grambank">${withIcon("heatmap", t("lang.tabGb"))}</button>
+        <button class="tab" data-tab="tree">${withIcon("tree", t("lang.tabTree"))}</button>
+        <button class="tab" data-tab="near">${withIcon("neighbors", t("lang.tabNear"))}</button>
       </div>
       <div id="tab-wals" class="tab-panel">
         <canvas id="coverage-chart" height="120"></canvas>
         ${profileTable(walsFeats, vec)}
       </div>
       <div id="tab-grambank" class="tab-panel hidden">
-        <p class="muted">Grambank uses a different questionnaire from WALS. Do not mix the two percentages as if they were one coding system.</p>
+        <p class="muted">${t("lang.gbNote")}</p>
         ${profileTable(gbFeats, vec)}
       </div>
       <div id="tab-tree" class="tab-panel hidden">
         <div id="tree-target" class="tree-wrap"></div>
       </div>
       <div id="tab-near" class="tab-panel hidden split">
-        ${neighborList("Structurally closest (combined)", neigh.combined, "Not enough overlapping features.")}
-        ${neighborList("Structurally closest (Grambank)", neigh.grambank, "Not enough Grambank overlap.")}
-        ${neighborList("Structurally closest (WALS)", neigh.wals, `Need at least ${stats.minOverlap.wals} shared WALS features.`)}
-        ${neighborList("Nearest unrelated languages", neigh.geoUnrelated, "No coordinates or no unrelated neighbors.")}
+        ${neighborList(t("lang.nearCombined"), neigh.combined, t("lang.emptyCombined"), "neighbors")}
+        ${neighborList(t("lang.nearGb"), neigh.grambank, t("lang.emptyGb"), "heatmap")}
+        ${neighborList(t("lang.nearWals"), neigh.wals, t("lang.emptyWals", { n: stats.minOverlap.wals }), "feature")}
+        ${neighborList(t("lang.nearGeo"), neigh.geoUnrelated, t("lang.emptyGeo"), "atlas")}
       </div>
     </section>
   `
@@ -144,7 +143,7 @@ export async function renderLanguage(root: HTMLElement, id: string): Promise<() 
   const chart = new Chart(ctx, {
     type: "bar",
     data: {
-      labels: ["WALS features coded", "Grambank features coded"],
+      labels: [t("lang.chartWals"), t("lang.chartGb")],
       datasets: [{ data: [lang.walsN, lang.grambankN], backgroundColor: [theme.yellow, theme.rust] }],
     },
     options: {
@@ -156,7 +155,7 @@ export async function renderLanguage(root: HTMLElement, id: string): Promise<() 
 
   const familyTree = lang.familyId ? treePack.trees[lang.familyId] : undefined
   if (familyTree) renderTree(root.querySelector("#tree-target")!, prune(familyTree, lang.id), lang.id)
-  else root.querySelector("#tree-target")!.innerHTML = `<p class="muted">No Glottolog family tree for this language.</p>`
+  else root.querySelector("#tree-target")!.innerHTML = `<p class="muted">${t("lang.noTree")}</p>`
 
   root.querySelectorAll<HTMLButtonElement>(".tab").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -171,8 +170,8 @@ export async function renderLanguage(root: HTMLElement, id: string): Promise<() 
 }
 
 function profileTable(feats: Feature[], vec: Record<string, string>): string {
-  if (!feats.length) return `<p class="muted">No coded features in this source.</p>`
-  return `<table class="data"><thead><tr><th>Feature</th><th>Value</th></tr></thead><tbody>
+  if (!feats.length) return `<p class="muted">${t("lang.noFeats")}</p>`
+  return `<table class="data"><thead><tr><th>${t("lang.feature")}</th><th>${t("lang.value")}</th></tr></thead><tbody>
     ${feats
       .map(
         (f) =>

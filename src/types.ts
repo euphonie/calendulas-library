@@ -49,3 +49,4 @@ export type Route =
   | { view: "investigate"; lesson: string }
   | { view: "learn" }
   | { view: "compare"; a?: string; b?: string }
+  | { view: "notebook"; lang?: string; payload?: string }

@@ -1,4 +1,4 @@
-export type ToolId = "atlas" | "sunburst" | "dossier" | "compare" | "investigate" | "learn"
+export type ToolId = "atlas" | "sunburst" | "dossier" | "compare" | "investigate" | "learn" | "notebook"
 
 export type ToolDef = {
   id: ToolId
@@ -189,6 +189,33 @@ export const tools: ToolDef[] = [
     ],
     phrases: ["what is", "define", "how do i start", "glossary"],
     examples: ["What is a Sprachbund?", "How do I start?", "What do the percentages mean?"],
+  },
+  {
+    id: "notebook",
+    name: "Notebook",
+    tag: "slip",
+    blurb: "Write a phrase in any language, pick which language it is, and open maps and coded features around that specimen.",
+    learns: [
+      "What the writing itself shows: script, direction, tokens — not a parse of the grammar",
+      "The selected language’s WALS and Grambank profile, family, and geography",
+      "How to share a specimen as an encoded link that does not inject into the address bar",
+    ],
+    href: "/notebook",
+    keywords: [
+      "notebook",
+      "phrase",
+      "sentence",
+      "write",
+      "specimen",
+      "example",
+      "text",
+      "share",
+      "slip",
+      "orthography",
+      "script",
+    ],
+    phrases: ["write a sentence", "phrase in", "example sentence", "type a phrase", "notebook"],
+    examples: ["Write a sentence in K'iche'", "Type a phrase in Arabic", "Share a specimen"],
   },
 ]
 

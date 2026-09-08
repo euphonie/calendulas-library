@@ -302,6 +302,13 @@ def load_glottolog(cldf: Path) -> tuple[pd.DataFrame, dict[str, list[str]], dict
     return langs, class_paths, names
 
 
+def lect_score(row, glot_name: str, n: int) -> tuple:
+    """Prefer the lect with the most codes, then the Glottolog name, then an unadorned label."""
+    name = clean_name(row.get("Name"), "")
+    glot = (glot_name or "").casefold()
+    return (n, int(name.casefold() == glot), 0 if "(" in name else 1)
+
+
 def unify_languages(
     wals_langs: pd.DataFrame,
     gb_langs: pd.DataFrame,
@@ -310,7 +317,7 @@ def unify_languages(
     glot_names: dict[str, str],
     wals_by_lang: dict[str, dict],
     gb_by_lang: dict[str, dict],
-) -> list[dict]:
+) -> tuple[list[dict], dict[str, str], dict[str, str]]:
     glot_by_code = {r["ID"]: r for _, r in glot_langs.iterrows()}
     glot_by_iso: dict[str, str] = {}
     for _, r in glot_langs.iterrows():
@@ -357,43 +364,55 @@ def unify_languages(
             }
         return records[gid]
 
+    wals_id_to_gid: dict[str, str] = {}
+    gb_id_to_gid: dict[str, str] = {}
+    wals_groups: dict[str, list] = defaultdict(list)
+    gb_groups: dict[str, list] = defaultdict(list)
+
     for _, r in wals_langs.iterrows():
         gid = resolve_gid(r, f"wals-{r['ID']}")
-        rec = ensure(gid)
-        rec["walsId"] = r["ID"]
-        rec["walsName"] = r["Name"]
-        rec["walsN"] = int(len(wals_by_lang.get(r["ID"], {})))
-        rec["genus"] = r.get("Genus") or rec["genus"]
-        if not rec["familyName"]:
-            rec["familyName"] = r.get("Family") or rec["familyName"]
-        if rec["lat"] is None:
-            rec["lat"] = as_float(r.get("Latitude"))
-            rec["lon"] = as_float(r.get("Longitude"))
-        if not rec["macroarea"]:
-            rec["macroarea"] = r.get("Macroarea") or None
-        if rec["name"] in {gid, rec["id"]} or rec["name"] == gid:
-            rec["name"] = r["Name"]
-        if not rec["iso"]:
-            rec["iso"] = usable_code(r.get("ISO639P3code"))
+        wals_groups[gid].append(r)
+        wals_id_to_gid[r["ID"]] = gid
 
     for _, r in gb_langs.iterrows():
         gid = resolve_gid(r, r["ID"])
+        gb_groups[gid].append(r)
+        gb_id_to_gid[r["ID"]] = gid
+
+    def attach_best(gid: str, rows: list, by_lang: dict[str, dict], id_key: str, name_key: str | None, n_key: str) -> None:
         rec = ensure(gid)
-        rec["gbId"] = r["ID"]
-        rec["grambankN"] = int(len(gb_by_lang.get(r["ID"], {})))
+        ranked = sorted(
+            rows,
+            key=lambda row: lect_score(row, rec["name"], len(by_lang.get(row["ID"], {}))),
+            reverse=True,
+        )
+        best = ranked[0]
+        rec[id_key] = best["ID"]
+        if name_key:
+            rec[name_key] = best["Name"]
+        rec[n_key] = int(len(by_lang.get(best["ID"], {})))
         if rec["lat"] is None:
-            rec["lat"] = as_float(r.get("Latitude"))
-            rec["lon"] = as_float(r.get("Longitude"))
+            rec["lat"] = as_float(best.get("Latitude"))
+            rec["lon"] = as_float(best.get("Longitude"))
         if not rec["macroarea"]:
-            rec["macroarea"] = r.get("Macroarea") or None
+            rec["macroarea"] = best.get("Macroarea") or None
         if not rec["iso"]:
-            rec["iso"] = usable_code(r.get("ISO639P3code"))
+            rec["iso"] = usable_code(best.get("ISO639P3code"))
         if rec["name"] in {gid, rec["id"]}:
-            rec["name"] = r["Name"]
+            rec["name"] = best["Name"]
+        if id_key == "walsId":
+            rec["genus"] = best.get("Genus") or rec["genus"]
+            if not rec["familyName"]:
+                rec["familyName"] = best.get("Family") or rec["familyName"]
+
+    for gid, rows in wals_groups.items():
+        attach_best(gid, rows, wals_by_lang, "walsId", "walsName", "walsN")
+    for gid, rows in gb_groups.items():
+        attach_best(gid, rows, gb_by_lang, "gbId", None, "grambankN")
 
     langs = [v for v in records.values() if v["walsN"] or v["grambankN"]]
     langs.sort(key=lambda x: x["name"].lower())
-    return langs
+    return langs, wals_id_to_gid, gb_id_to_gid
 
 
 def feature_matrix(langs: list[dict], by_lang: dict[str, dict], key: str, prefix: str) -> tuple[np.ndarray, list[str]]:
@@ -597,10 +616,31 @@ def macroarea_order(by_feat: dict[str, dict[str, str]], langs: list[dict], wals_
     }
 
 
-def remap_feature_values(by_feat: dict[str, dict[str, str]], id_map: dict[str, str]) -> dict[str, dict[str, str]]:
-    remapped = {}
+def remap_feature_values(
+    by_feat: dict[str, dict[str, str]],
+    id_map: dict[str, str],
+    preferred: dict[str, str],
+    richness: dict[str, int],
+) -> dict[str, dict[str, str]]:
+    remapped: dict[str, dict[str, str]] = {}
     for fid, mapping in by_feat.items():
-        remapped[fid] = {id_map.get(lid, lid): cid for lid, cid in mapping.items() if id_map.get(lid) or lid.startswith("wals-")}
+        by_gid: dict[str, list[tuple[str, str]]] = defaultdict(list)
+        for lid, cid in mapping.items():
+            gid = id_map.get(lid)
+            if not gid:
+                if lid.startswith("wals-"):
+                    gid = lid
+                else:
+                    continue
+            by_gid[gid].append((lid, cid))
+        out: dict[str, str] = {}
+        for gid, pairs in by_gid.items():
+            want = preferred.get(gid)
+            pick = next((cid for lid, cid in pairs if lid == want), None)
+            if pick is None:
+                pick = max(pairs, key=lambda p: richness.get(p[0], 0))[1]
+            out[gid] = pick
+        remapped[fid] = out
     return remapped
 
 
@@ -613,18 +653,19 @@ def main() -> None:
     print("loading Glottolog")
     glot_langs, class_paths, glot_names = load_glottolog(paths["glottolog"])
 
-    langs = unify_languages(
+    langs, wals_id_to_gid, gb_id_to_gid = unify_languages(
         wals_langs, gb_langs, glot_langs, class_paths, glot_names, wals_by_lang, gb_by_lang
     )
-    wals_id_to_gid = {l["walsId"]: l["id"] for l in langs if l["walsId"]}
-    gb_id_to_gid = {l["gbId"]: l["id"] for l in langs if l["gbId"]}
+    wals_preferred = {l["id"]: l["walsId"] for l in langs if l["walsId"]}
+    gb_preferred = {l["id"]: l["gbId"] for l in langs if l["gbId"]}
+    wals_rich = {lid: len(vec) for lid, vec in wals_by_lang.items()}
+    gb_rich = {lid: len(vec) for lid, vec in gb_by_lang.items()}
 
-    wals_by_feat_g = remap_feature_values(wals_by_feat, wals_id_to_gid)
-    gb_by_feat_g = remap_feature_values(gb_by_feat, gb_id_to_gid)
+    wals_by_feat_g = remap_feature_values(wals_by_feat, wals_id_to_gid, wals_preferred, wals_rich)
+    gb_by_feat_g = remap_feature_values(gb_by_feat, gb_id_to_gid, gb_preferred, gb_rich)
 
     print(f"{len(langs)} languages")
     OUT.mkdir(parents=True, exist_ok=True)
-    write_json(OUT / "languages.json", langs)
     write_json(
         OUT / "features.json",
         {
@@ -644,6 +685,11 @@ def main() -> None:
     for fid, mapping in {**wals_by_feat_g, **gb_by_feat_g}.items():
         for gid, cid in mapping.items():
             vectors[gid][fid] = cid
+    for lang in langs:
+        vec = vectors.get(lang["id"], {})
+        lang["walsN"] = sum(1 for k in vec if k.startswith("wals:"))
+        lang["grambankN"] = sum(1 for k in vec if k.startswith("gb:"))
+    write_json(OUT / "languages.json", langs)
     write_json(OUT / "vectors.json", dict(vectors))
 
     print("similarity")
@@ -705,6 +751,8 @@ def main() -> None:
 
     kiche = next((l for l in langs if l["id"] == "kich1262" or (l["name"] or "").lower().startswith("k'iche") or (l["name"] or "").lower().startswith("quiche")), None)
     print("K'iche' record:", json.dumps(kiche, ensure_ascii=False) if kiche else "NOT FOUND")
+    spanish = next((l for l in langs if l["id"] == "stan1288"), None)
+    print("Spanish record:", json.dumps(spanish, ensure_ascii=False) if spanish else "NOT FOUND")
     print("wrote", OUT)
 
 

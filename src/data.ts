@@ -1,4 +1,5 @@
 import type { Feature, Language, Neighbor } from "./types.ts"
+import { t } from "./i18n.ts"
 
 const cache = new Map<string, Promise<unknown>>()
 const asset = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\//, "")}`
@@ -95,6 +96,6 @@ export function searchLanguages(list: Language[], query: string, limit = 12): La
 }
 
 export function codeLabel(feature: Feature, code: string | undefined): string {
-  if (!code) return "not coded"
+  if (!code) return t("notCoded")
   return feature.codes.find((c) => c.id === code)?.name ?? code
 }
