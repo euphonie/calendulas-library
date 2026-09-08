@@ -98,20 +98,13 @@ export function searchLanguages(list: Language[], query: string, limit = 12): La
   return scored.slice(0, limit).map((x) => x.lang)
 }
 
-export function isBinaryGrambank(feature: Feature): boolean {
-  if (feature.source !== "grambank") return false
-  const ids = feature.codes.map((c) => c.id).filter((id) => id !== "?")
-  return ids.length > 0 && ids.every((id) => id === "0" || id === "1")
-}
-
 export function codeLabel(feature: Feature, code: string | undefined): string {
   if (!code) return t("notCoded")
   const named = feature.codes.find((c) => c.id === code)?.name
-  if (isBinaryGrambank(feature)) {
-    const yes = code === "1" || named === "1" || named === "yes" || named === "present"
-    const no = code === "0" || named === "0" || named === "no" || named === "absent"
-    if (yes) return t("gb.yes")
-    if (no) return t("gb.no")
+  if (feature.source === "grambank") {
+    const token = (named ?? "").trim().toLowerCase()
+    if (token === "present") return t("gb.yes")
+    if (token === "absent") return t("gb.no")
   }
   return named ?? code
 }

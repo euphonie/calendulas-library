@@ -238,7 +238,10 @@ def build_grambank(cldf: Path) -> tuple[pd.DataFrame, list[dict], dict[str, dict
     code_lookup = defaultdict(list)
     if not codes.empty:
         for _, c in codes.iterrows():
-            code_lookup[c["Parameter_ID"]].append({"id": c["ID"], "name": c.get("Name") or c["ID"]})
+            desc = c.get("Description")
+            name = desc if pd.notna(desc) and str(desc).strip() else c.get("Name") or c["ID"]
+            name = str(name).strip().rstrip(".")
+            code_lookup[c["Parameter_ID"]].append({"id": c["ID"], "name": name})
 
     features: list[dict] = []
     for _, p in params.iterrows():
@@ -250,14 +253,6 @@ def build_grambank(cldf: Path) -> tuple[pd.DataFrame, list[dict], dict[str, dict
             {"id": "?", "name": "unknown"},
         ]
         compacted = [{"id": compact_code_id(pid, o["id"]), "name": o["name"]} for o in opts]
-        known = {c["id"] for c in compacted if c["id"] != "?"}
-        binary = bool(known) and known <= {"0", "1"}
-        for c in compacted:
-            token, raw = str(c["id"]), str(c["name"])
-            if binary and (token == "1" or raw in {"1", "present", "yes"}):
-                c["name"] = "yes"
-            elif binary and (token == "0" or raw in {"0", "absent", "no"}):
-                c["name"] = "no"
         features.append(
             {
                 "id": fid,
