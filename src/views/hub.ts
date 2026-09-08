@@ -5,6 +5,7 @@ import { tools } from "../tools.ts"
 import { hubArt, type HubArtId } from "../viz/hub-art.ts"
 import { t, toolMsg } from "../i18n.ts"
 import { icon, TOOL_ICONS, withIcon } from "../icons.ts"
+import { escapeHtml } from "../format.ts"
 
 const useCases: { intentKey: "use.sov.intent" | "use.bund.intent" | "use.pair.intent" | "use.sun.intent"; learnKey: "use.sov.learn" | "use.bund.learn" | "use.pair.learn" | "use.sun.learn"; art: HubArtId }[] = [
   { intentKey: "use.sov.intent", art: "sov", learnKey: "use.sov.learn" },
@@ -23,7 +24,7 @@ export async function renderHub(root: HTMLElement, langs: Language[], initial = 
         <form class="intent-pill" id="intent-form">
           ${icon("search", 18)}
           <label class="visually-hidden" for="intent">${t("hub.intent")}</label>
-          <input id="intent" type="search" name="intent" value="${escapeAttr(initial)}" placeholder="${t("hub.placeholder")}" />
+          <input id="intent" type="search" name="intent" value="${escapeHtml(initial)}" placeholder="${t("hub.placeholder")}" />
           <button class="btn" type="submit">${withIcon("open", t("hub.open"))}</button>
         </form>
         <nav class="hub-jumps" aria-label="${t("hub.jump")}">
@@ -38,7 +39,7 @@ export async function renderHub(root: HTMLElement, langs: Language[], initial = 
           <div class="use-grid">
             ${useCases
               .map(
-                (c) => `<button type="button" class="card use-card" data-ex="${escapeAttr(t(c.intentKey))}">
+                (c) => `<button type="button" class="card use-card" data-ex="${escapeHtml(t(c.intentKey))}">
                   ${hubArt[c.art]}
                   <h3>${t(c.intentKey)}</h3>
                   <p>${t(c.learnKey)}</p>
@@ -90,7 +91,7 @@ export async function renderHub(root: HTMLElement, langs: Language[], initial = 
         ${hubArt[best.tool.id]}
         <p class="kicker with-icon">${withIcon(TOOL_ICONS[best.tool.id] ?? "open", `${t("hub.bestMatch")} · ${Math.round(best.score * 100)}%`)}</p>
         <h2 class="with-icon">${withIcon(TOOL_ICONS[best.tool.id] ?? "open", toolMsg(best.tool.id, "name"), 22)}</h2>
-        <p>${best.reason}</p>
+        <p>${escapeHtml(best.reason)}</p>
         <p class="learn-label with-icon">${icon("learn", 16)}${t("hub.youCanLearn")}</p>
         <ul class="learn-list">
           ${(["learn1", "learn2", "learn3"] as const).map((part) => `<li>${toolMsg(best.tool.id, part)}</li>`).join("")}
@@ -103,7 +104,7 @@ export async function renderHub(root: HTMLElement, langs: Language[], initial = 
               .slice(0, 3)
               .map(
                 (m) =>
-                  `<li><a class="hub-jump" href="${m.href}">${withIcon(TOOL_ICONS[m.tool.id] ?? "open", toolMsg(m.tool.id, "name"))}</a> <span class="score">${Math.round(m.score * 100)}%</span> <span class="muted">${m.reason}</span></li>`,
+                  `<li><a class="hub-jump" href="${m.href}">${withIcon(TOOL_ICONS[m.tool.id] ?? "open", toolMsg(m.tool.id, "name"))}</a> <span class="score">${Math.round(m.score * 100)}%</span> <span class="muted">${escapeHtml(m.reason)}</span></li>`,
               )
               .join("")}</ol>`
           : ""
@@ -133,8 +134,4 @@ export async function renderHub(root: HTMLElement, langs: Language[], initial = 
   })
   paint(initial)
   return () => {}
-}
-
-function escapeAttr(value: string): string {
-  return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")
 }

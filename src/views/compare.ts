@@ -1,5 +1,7 @@
+import type { Feature } from "../types.ts"
 import { codeLabel, featureIndex, languageMap, searchLanguages, vectors as loadVectors, languages as loadLangs } from "../data.ts"
 import { href, setRoute } from "../router.ts"
+import { escapeHtml } from "../format.ts"
 import { t } from "../i18n.ts"
 import { icon, withIcon } from "../icons.ts"
 
@@ -11,8 +13,8 @@ export async function renderCompare(root: HTMLElement, aId?: string, bId?: strin
     <section class="page">
       <h1 class="with-icon">${icon("compare", 28)}${t("compare.title")}</h1>
       <div class="compare-picks">
-        <label class="field"><span>${icon("language")}${t("compare.a")}</span> <input id="a" list="lang-list" value="${a?.name ?? ""}" /></label>
-        <label class="field"><span>${icon("language")}${t("compare.b")}</span> <input id="b" list="lang-list" value="${b?.name ?? ""}" /></label>
+        <label class="field"><span>${icon("language")}${t("compare.a")}</span> <input id="a" list="lang-list" value="${escapeHtml(a?.name ?? "")}" /></label>
+        <label class="field"><span>${icon("language")}${t("compare.b")}</span> <input id="b" list="lang-list" value="${escapeHtml(b?.name ?? "")}" /></label>
         <datalist id="lang-list"></datalist>
         <button id="go" type="button" class="btn">${withIcon("compare", t("compare.go"))}</button>
       </div>
@@ -42,29 +44,22 @@ export async function renderCompare(root: HTMLElement, aId?: string, bId?: strin
       .map((id) => index.features.find((f) => f.id === id)!)
       .filter(Boolean)
       .sort((x, y) => Number(y.curriculum) - Number(x.curriculum) || x.id.localeCompare(y.id))
-    let agree = 0
-    let both = 0
-    const rows = ids.map((f) => {
-      const same = va[f.id] && vb[f.id] && va[f.id] === vb[f.id]
-      if (va[f.id] && vb[f.id]) {
-        both += 1
-        if (same) agree += 1
-      }
-      return `<tr class="${same ? "agree" : va[f.id] && vb[f.id] ? "differ" : ""}">
-        <td>${f.sourceId} ${f.name}</td>
-        <td>${codeLabel(f, va[f.id])}</td>
-        <td>${codeLabel(f, vb[f.id])}</td>
-      </tr>`
-    })
+    const wals = ids.filter((f) => f.source === "wals")
+    const gb = ids.filter((f) => f.source === "grambank")
+    const walsBlock = sourceBlock(t("compare.wals"), wals, va, vb, a.name, b.name)
+    const gbBlock = sourceBlock(t("compare.gb"), gb, va, vb, a.name, b.name)
     root.querySelector("#table")!.innerHTML = `
       <p>${t("compare.agree", {
-        a: `<a href="${href(`/language/${a.id}`)}">${a.name}</a>`,
-        b: `<a href="${href(`/language/${b.id}`)}">${b.name}</a>`,
-        agree,
-        both,
+        a: `<a href="${href(`/language/${a.id}`)}">${escapeHtml(a.name)}</a>`,
+        b: `<a href="${href(`/language/${b.id}`)}">${escapeHtml(b.name)}</a>`,
       })}</p>
-      <table class="data"><thead><tr><th>${t("compare.feature")}</th><th>${a.name}</th><th>${b.name}</th></tr></thead>
-      <tbody>${rows.join("")}</tbody></table>
+      <div class="compare-scores">
+        <p>${walsBlock.score}</p>
+        <p>${gbBlock.score}</p>
+        <p class="muted">${t("lang.gbNote")}</p>
+      </div>
+      ${walsBlock.html}
+      ${gbBlock.html}
     `
   }
 
@@ -75,4 +70,39 @@ export async function renderCompare(root: HTMLElement, aId?: string, bId?: strin
   })
   paint()
   return () => {}
+}
+
+function sourceBlock(
+  source: string,
+  feats: Feature[],
+  va: Record<string, string>,
+  vb: Record<string, string>,
+  aName: string,
+  bName: string,
+): { score: string; html: string } {
+  let agree = 0
+  let both = 0
+  const rows = feats.map((f) => {
+    const same = Boolean(va[f.id] && vb[f.id] && va[f.id] === vb[f.id])
+    if (va[f.id] && vb[f.id]) {
+      both += 1
+      if (same) agree += 1
+    }
+    return `<tr class="${same ? "agree" : va[f.id] && vb[f.id] ? "differ" : ""}">
+      <td>${escapeHtml(`${f.sourceId} ${f.name}`)}</td>
+      <td>${escapeHtml(codeLabel(f, va[f.id]))}</td>
+      <td>${escapeHtml(codeLabel(f, vb[f.id]))}</td>
+    </tr>`
+  })
+  const score = both
+    ? t("compare.sourceAgree", { source, agree, both })
+    : t("compare.sourceEmpty", { source })
+  const table = feats.length
+    ? `<table class="data"><thead><tr><th>${t("compare.feature")}</th><th>${escapeHtml(aName)}</th><th>${escapeHtml(bName)}</th></tr></thead>
+      <tbody>${rows.join("")}</tbody></table>`
+    : `<p class="muted">${t("lang.noFeats")}</p>`
+  return {
+    score,
+    html: `<section class="compare-source"><h2>${escapeHtml(source)}</h2>${table}</section>`,
+  }
 }

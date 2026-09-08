@@ -1,5 +1,6 @@
 export const MAX_PHRASE_CHARS = 800
 export const GLOTTOCODE = /^[a-z]{4}\d{4}$/
+export const FEATURE_ID = /^(wals|gb):[A-Za-z0-9._-]+$/
 const PAYLOAD = /^v1\.[A-Za-z0-9_-]+$/
 
 const SCRIPT_RANGES: { name: string; from: number; to: number; rtl?: boolean }[] = [
@@ -56,6 +57,10 @@ const COMBINING: [number, number][] = [
 
 export function isGlottocode(id: string): boolean {
   return GLOTTOCODE.test(id)
+}
+
+export function isFeatureId(value: string): boolean {
+  return FEATURE_ID.test(value)
 }
 
 export function sanitizePhrase(raw: string): { text: string; truncated: boolean } {

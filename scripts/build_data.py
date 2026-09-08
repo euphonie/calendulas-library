@@ -249,6 +249,15 @@ def build_grambank(cldf: Path) -> tuple[pd.DataFrame, list[dict], dict[str, dict
             {"id": "1", "name": "present"},
             {"id": "?", "name": "unknown"},
         ]
+        compacted = [{"id": compact_code_id(pid, o["id"]), "name": o["name"]} for o in opts]
+        known = {c["id"] for c in compacted if c["id"] != "?"}
+        binary = bool(known) and known <= {"0", "1"}
+        for c in compacted:
+            token, raw = str(c["id"]), str(c["name"])
+            if binary and (token == "1" or raw in {"1", "present", "yes"}):
+                c["name"] = "yes"
+            elif binary and (token == "0" or raw in {"0", "absent", "no"}):
+                c["name"] = "no"
         features.append(
             {
                 "id": fid,
@@ -258,7 +267,7 @@ def build_grambank(cldf: Path) -> tuple[pd.DataFrame, list[dict], dict[str, dict
                 "area": "morphosyntax",
                 "curriculum": False,
                 "blurb": "Grambank morphosyntactic coding (binary or small categorical).",
-                "codes": [{"id": compact_code_id(pid, o["id"]), "name": o["name"]} for o in opts],
+                "codes": compacted,
                 "url": f"https://grambank.clld.org/parameters/{pid}",
             }
         )

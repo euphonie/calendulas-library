@@ -9,7 +9,7 @@ import {
   vectors as loadVectors,
 } from "../data.ts"
 import { href } from "../router.ts"
-import { pct } from "../format.ts"
+import { escapeHtml, pct } from "../format.ts"
 import { theme } from "../theme.ts"
 import type { Feature, Neighbor } from "../types.ts"
 import { renderTree } from "../viz/tree.ts"
@@ -60,7 +60,7 @@ function neighborList(title: string, rows: Neighbor[], empty: string, ic: IconNa
       ${rows
         .map(
           (n) => `<li>
-            <a href="${href(`/language/${n.id}`)}">${n.name}</a>
+            <a href="${href(`/language/${n.id}`)}">${escapeHtml(n.name)}</a>
             <span class="score">${n.score == null ? `${n.distanceKm} km` : pct(n.score)}</span>
             <span class="muted">${n.nShared ? t("lang.onN", { n: n.nShared }) : ""}${n.sameFamily ? ` · ${t("sameFamily")}` : ""}</span>
           </li>`,
@@ -80,7 +80,14 @@ export async function renderLanguage(root: HTMLElement, id: string): Promise<() 
   ])
   const lang = byId.get(id)
   if (!lang) {
-    root.innerHTML = `<section class="page"><h1>${t("lang.notFound")}</h1><p>${t("lang.noRecord", { id: `<code>${id}</code>` })}</p></section>`
+    const section = document.createElement("section")
+    section.className = "page"
+    const h1 = document.createElement("h1")
+    h1.textContent = t("lang.notFound")
+    const p = document.createElement("p")
+    p.textContent = id ? t("lang.noRecord", { id }) : t("lang.notFound")
+    section.append(h1, p)
+    root.replaceChildren(section)
     return () => {}
   }
   const features = new Map(index.features.map((f) => [f.id, f]))
@@ -97,19 +104,19 @@ export async function renderLanguage(root: HTMLElement, id: string): Promise<() 
 
   const walsBit =
     lang.walsName && lang.walsName !== lang.name
-      ? t("lang.walsNamed", { name: lang.walsName, id: lang.walsId ?? "" })
+      ? t("lang.walsNamed", { name: escapeHtml(lang.walsName), id: escapeHtml(lang.walsId ?? "") })
       : lang.walsId
-        ? t("lang.walsId", { id: lang.walsId })
+        ? t("lang.walsId", { id: escapeHtml(lang.walsId) })
         : t("notInWals")
 
   root.innerHTML = `
     <section class="page language-page">
       <header class="hero-card">
-        <p class="kicker with-icon">${icon("profile", 16)}${lang.familyName ?? t("ungrouped")} · ${lang.iso ?? t("noIso")} · ${lang.macroarea ?? ""}</p>
-        <h1>${lang.name}</h1>
-        <p class="meta">${t("lang.meta", { wals: walsBit, id: lang.id, walsN: lang.walsN, gb: lang.grambankN })}</p>
+        <p class="kicker with-icon">${icon("profile", 16)}${escapeHtml(lang.familyName ?? t("ungrouped"))} · ${escapeHtml(lang.iso ?? t("noIso"))} · ${escapeHtml(lang.macroarea ?? "")}</p>
+        <h1>${escapeHtml(lang.name)}</h1>
+        <p class="meta">${t("lang.meta", { wals: walsBit, id: escapeHtml(lang.id), walsN: lang.walsN, gb: lang.grambankN })}</p>
         <dl class="hero-grid">
-          ${heroRows.map((r) => `<div><dt>${r.label}</dt><dd>${r.value}</dd></div>`).join("")}
+          ${heroRows.map((r) => `<div><dt>${escapeHtml(r.label)}</dt><dd>${escapeHtml(r.value)}</dd></div>`).join("")}
         </dl>
         ${lang.walsN < stats.minOverlap.wals ? `<p class="notice">${t("lang.sparse", { n: lang.walsN, min: stats.minOverlap.wals })}</p>` : ""}
       </header>
@@ -175,7 +182,7 @@ function profileTable(feats: Feature[], vec: Record<string, string>): string {
     ${feats
       .map(
         (f) =>
-          `<tr><td><a href="${href(`/atlas?f=${encodeURIComponent(f.id)}`)}">${f.sourceId} ${f.name}</a></td><td>${codeLabel(f, vec[f.id])}</td></tr>`,
+          `<tr><td><a href="${href(`/atlas?f=${encodeURIComponent(f.id)}`)}">${escapeHtml(`${f.sourceId} ${f.name}`)}</a></td><td>${escapeHtml(codeLabel(f, vec[f.id]))}</td></tr>`,
       )
       .join("")}
   </tbody></table>`

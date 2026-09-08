@@ -1,5 +1,6 @@
 import type { Feature, Language, Neighbor } from "./types.ts"
 import { t } from "./i18n.ts"
+import { isFeatureId } from "./phrase.ts"
 
 const cache = new Map<string, Promise<unknown>>()
 const asset = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\//, "")}`
@@ -67,8 +68,10 @@ export const trees = () =>
   load<{ families: { id: string; name: string }[]; trees: Record<string, import("./types.ts").FamilyNode> }>(
     "data/trees.json",
   )
-export const featureValues = (featureId: string) =>
-  load<Record<string, string>>(`data/values/${featureId.replace(":", "_")}.json`)
+export const featureValues = (featureId: string) => {
+  if (!isFeatureId(featureId)) return Promise.resolve({} as Record<string, string>)
+  return load<Record<string, string>>(`data/values/${featureId.replace(":", "_")}.json`)
+}
 
 export async function languageMap(): Promise<Map<string, Language>> {
   const list = await languages()
@@ -95,7 +98,20 @@ export function searchLanguages(list: Language[], query: string, limit = 12): La
   return scored.slice(0, limit).map((x) => x.lang)
 }
 
+export function isBinaryGrambank(feature: Feature): boolean {
+  if (feature.source !== "grambank") return false
+  const ids = feature.codes.map((c) => c.id).filter((id) => id !== "?")
+  return ids.length > 0 && ids.every((id) => id === "0" || id === "1")
+}
+
 export function codeLabel(feature: Feature, code: string | undefined): string {
   if (!code) return t("notCoded")
-  return feature.codes.find((c) => c.id === code)?.name ?? code
+  const named = feature.codes.find((c) => c.id === code)?.name
+  if (isBinaryGrambank(feature)) {
+    const yes = code === "1" || named === "1" || named === "yes" || named === "present"
+    const no = code === "0" || named === "0" || named === "no" || named === "absent"
+    if (yes) return t("gb.yes")
+    if (no) return t("gb.no")
+  }
+  return named ?? code
 }

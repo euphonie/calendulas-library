@@ -1,5 +1,6 @@
 import * as d3 from "d3"
 import type { Feature } from "../types.ts"
+import { codeLabel } from "../data.ts"
 import { colorForCodes } from "../format.ts"
 
 export function renderHeatmap(
@@ -32,7 +33,7 @@ export function renderHeatmap(
     .attr("y", 16)
     .attr("text-anchor", "middle")
     .attr("class", "heat-label")
-    .text((d) => colFeature.codes.find((c) => c.id === d)?.name ?? d)
+    .text((d) => codeLabel(colFeature, d))
   svg
     .append("g")
     .selectAll("text")
@@ -42,7 +43,7 @@ export function renderHeatmap(
     .attr("y", (_, i) => top + i * cell + cell / 2 + 4)
     .attr("text-anchor", "end")
     .attr("class", "heat-label")
-    .text((d) => rowFeature.codes.find((c) => c.id === d)?.name ?? d)
+    .text((d) => codeLabel(rowFeature, d))
   const cells = rowCodes.flatMap((r, i) => colCodes.map((c, j) => ({ r, c, i, j, n: table[i]?.[j] ?? 0 })))
   svg
     .append("g")

@@ -1,7 +1,7 @@
 import type { Feature, Language } from "../types.ts"
-import { featureIndex, featureValues, languageMap, languages as loadLangs } from "../data.ts"
+import { codeLabel, featureIndex, featureValues, languageMap, languages as loadLangs } from "../data.ts"
 import { href, setRoute } from "../router.ts"
-import { colorForCodes } from "../format.ts"
+import { colorForCodes, cssColor, escapeHtml, safeHttpsUrl } from "../format.ts"
 import { theme } from "../theme.ts"
 import { createLanguageMap, type MapHandle } from "../viz/map.ts"
 import { t } from "../i18n.ts"
@@ -63,7 +63,7 @@ export async function renderAtlas(
     root.querySelector("#feature-blurb")!.textContent =
       next.blurb || t("atlas.coding", { area: next.area, source: next.source === "wals" ? "WALS" : "Grambank" })
     const src = root.querySelector<HTMLAnchorElement>("#feature-source")!
-    src.href = next.url
+    src.href = safeHttpsUrl(next.url)
     src.textContent = next.source === "wals" ? `WALS ${next.sourceId}` : `Grambank ${next.sourceId}`
     const values = await featureValues(next.id)
     const present = [...new Set(Object.values(values))]
@@ -72,7 +72,7 @@ export async function renderAtlas(
     const groups = [
       ...present.map((code) => ({
         code,
-        name: next.codes.find((c) => c.id === code)?.name ?? code,
+        name: codeLabel(next, code),
         n: Object.values(values).filter((v) => v === code).length,
         color: colors.get(code) ?? theme.uncoded,
       })),
@@ -85,13 +85,13 @@ export async function renderAtlas(
       </div>
       ${groups
         .map(
-          (g) => `<div class="legend-row" data-code="${escapeAttr(g.code)}">
-            <button type="button" class="layer-toggle" aria-pressed="true" aria-label="${escapeAttr(t("showHide", { name: g.name }))}">
-              <span class="swatch" style="background:${g.color}"></span>
+          (g) => `<div class="legend-row" data-code="${escapeHtml(g.code)}">
+            <button type="button" class="layer-toggle" aria-pressed="true" aria-label="${escapeHtml(t("showHide", { name: g.name }))}">
+              <span class="swatch" style="background:${cssColor(g.color)}"></span>
             </button>
-            <span class="legend-name">${g.name}</span>
+            <span class="legend-name">${escapeHtml(g.name)}</span>
             <span class="muted">${g.n}</span>
-            <button type="button" class="label-toggle" aria-pressed="false" aria-label="${escapeAttr(t("labelsFor", { name: g.name }))}">${withIcon("labels", t("labels"), 13)}</button>
+            <button type="button" class="label-toggle" aria-pressed="false" aria-label="${escapeHtml(t("labelsFor", { name: g.name }))}">${withIcon("labels", t("labels"), 13)}</button>
           </div>`,
         )
         .join("")}
@@ -140,11 +140,11 @@ export async function renderAtlas(
   }
 
   function showPanel(lang: Language, feat: Feature, code: string | undefined) {
-    const label = feat.codes.find((c) => c.id === code)?.name ?? (code ? code : t("notCoded"))
+    const label = codeLabel(feat, code)
     root.querySelector("#lang-panel")!.innerHTML = `
-      <h2 class="with-icon">${icon("language", 22)}${lang.name}</h2>
-      <p class="meta">${lang.familyName ?? t("familyUnknown")} · ${lang.macroarea ?? t("areaUnknown")}</p>
-      <p><strong>${feat.sourceId}:</strong> ${label}</p>
+      <h2 class="with-icon">${icon("language", 22)}${escapeHtml(lang.name)}</h2>
+      <p class="meta">${escapeHtml(lang.familyName ?? t("familyUnknown"))} · ${escapeHtml(lang.macroarea ?? t("areaUnknown"))}</p>
+      <p><strong>${escapeHtml(feat.sourceId)}:</strong> ${escapeHtml(label)}</p>
       <p class="row-links">
         <a href="${href(`/language/${lang.id}`)}">${withIcon("profile", t("openProfile"))}</a>
         <a href="${href(`/compare?a=${lang.id}`)}">${withIcon("compare", t("nav.compare"))}</a>
@@ -159,8 +159,4 @@ export async function renderAtlas(
   await paint(feature, opts.lang)
   requestAnimationFrame(() => mapHandle.map.resize())
   return () => mapHandle.destroy()
-}
-
-function escapeAttr(value: string): string {
-  return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")
 }

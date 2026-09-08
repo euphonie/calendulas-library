@@ -1,3 +1,13 @@
+import "@fontsource/dm-sans/400.css"
+import "@fontsource/dm-sans/400-italic.css"
+import "@fontsource/dm-sans/500.css"
+import "@fontsource/dm-sans/600.css"
+import "@fontsource/dm-sans/700.css"
+import "@fontsource/fraunces/500.css"
+import "@fontsource/fraunces/600.css"
+import "@fontsource/fraunces/700.css"
+import "@fontsource/ibm-plex-mono/400.css"
+import "@fontsource/ibm-plex-mono/500.css"
 import "./style.css"
 import "maplibre-gl/dist/maplibre-gl.css"
 import { applyChartTheme } from "./theme.ts"
@@ -16,6 +26,7 @@ import { renderNotebook } from "./views/notebook.ts"
 import { KOFI_URL, kofiButton, kofiCup } from "./support.ts"
 import { getLocale, localePickerHtml, setLocale, t, type Locale, type MsgKey } from "./i18n.ts"
 import { icon, NAV_ICONS, type IconName } from "./icons.ts"
+import { escapeHtml } from "./format.ts"
 
 const app = document.querySelector<HTMLDivElement>("#app")!
 
@@ -75,13 +86,21 @@ async function render(): Promise<void> {
     else if (route.view === "notebook") teardown = await renderNotebook(main, langs, route)
     else teardown = await renderCompare(main, route.a, route.b)
   } catch (err) {
-    main.innerHTML = `<section class="page"><h1>${t("error.load")}</h1><p class="muted">${err instanceof Error ? err.message : String(err)}</p></section>`
+    const section = document.createElement("section")
+    section.className = "page"
+    const h1 = document.createElement("h1")
+    h1.textContent = t("error.load")
+    const p = document.createElement("p")
+    p.className = "muted"
+    p.textContent = err instanceof Error ? err.message : String(err)
+    section.append(h1, p)
+    main.replaceChildren(section)
   }
 }
 
 function paintFooter(citations: string): void {
   document.querySelector("#footer")!.innerHTML =
-    `<p class="kofi-foot"><a href="${KOFI_URL}" target="_blank" rel="noopener noreferrer">${kofiCup()}${t("kofi.support")}</a></p>` + citations
+    `<p class="kofi-foot"><a href="${KOFI_URL}" target="_blank" rel="noopener noreferrer">${kofiCup()}${escapeHtml(t("kofi.support"))}</a></p>` + citations
 }
 
 const NAV_KEYS: Record<string, MsgKey> = {
@@ -105,7 +124,7 @@ function applyChrome(citations: string): void {
     const name = t(key)
     const ic = NAV_ICONS[link.dataset.nav ?? ""] as IconName | undefined
     link.title = name
-    link.innerHTML = `${ic ? icon(ic, 15) : ""}<span class="nav-label">${name}</span>`
+    link.innerHTML = `${ic ? icon(ic, 15) : ""}<span class="nav-label">${escapeHtml(name)}</span>`
   })
   const q = document.querySelector<HTMLInputElement>("#q")
   const qLabel = document.querySelector("label[for='q']")
@@ -140,7 +159,7 @@ async function boot(): Promise<void> {
   const [loadedLangs, stats] = await Promise.all([languages(), loadStats()])
   langs = loadedLangs
   const citations = Object.values(stats.datasets)
-    .map((d) => `<p>${d.citation}</p>`)
+    .map((d) => `<p>${escapeHtml(d.citation)}</p>`)
     .join("")
   paintFooter(citations)
 
@@ -154,9 +173,17 @@ async function boot(): Promise<void> {
       return
     }
     hits.hidden = false
-    hits.innerHTML = found
-      .map((l) => `<a href="${href(`/language/${l.id}`)}">${l.name} <span class="muted">${l.familyName ?? ""}</span></a>`)
-      .join("")
+    hits.replaceChildren()
+    for (const l of found) {
+      const a = document.createElement("a")
+      a.href = href(`/language/${l.id}`)
+      a.append(document.createTextNode(l.name + " "))
+      const span = document.createElement("span")
+      span.className = "muted"
+      span.textContent = l.familyName ?? ""
+      a.append(span)
+      hits.append(a)
+    }
   })
   document.addEventListener("click", (e) => {
     if (!(e.target instanceof Node)) return

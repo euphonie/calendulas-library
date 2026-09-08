@@ -1,5 +1,7 @@
 /** Inline stroke icons in the same hand as the Ko-fi cup. */
 
+import { escapeHtml } from "./format.ts"
+
 export type IconName =
   | "flower"
   | "hub"
@@ -72,7 +74,7 @@ export function icon(name: IconName, size = 16): string {
 }
 
 export function withIcon(name: IconName, text: string, size = 16): string {
-  return `${icon(name, size)}${text}`
+  return `${icon(name, size)}${escapeHtml(text)}`
 }
 
 export const NAV_ICONS: Record<string, IconName> = {

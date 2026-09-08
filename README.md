@@ -17,13 +17,15 @@ npm run dev
 
 Pinned dataset versions live in [`data/datasets.json`](data/datasets.json): WALS v2020.5, Glottolog 5.3, Grambank v1.0.3. Generated JSON is written to `public/data/`. When several WALS or Grambank lects share a Glottocode, the build keeps the richest coding (so Spanish is `spa`, not a sparsely coded variety).
 
+UI fonts (DM Sans, Fraunces, IBM Plex Mono) are bundled from Fontsource. Map label glyphs still load from MapLibre’s demo font host.
+
 ## Interface language
 
 The header picker translates **tool chrome** (nav, buttons, section copy) into English, Spanish, German, Italian, Portuguese, or French. Feature names and Glottolog language names stay in the source English. The choice is stored as `calendula-ui-lang` and, on a first visit, follows `navigator.languages` when it matches.
 
 ## GitHub Pages
 
-The app uses hash routes (`#/`, `#/atlas`, `#/notebook`) so it does not need a server-side fallback. In GitHub: **Settings → Pages → Source → GitHub Actions**. Push to `main` and the workflow in [`.github/workflows/pages.yml`](.github/workflows/pages.yml) builds with `base: /calendulas-library/` and deploys `dist/`.
+The app uses hash routes (`#/`, `#/atlas`, `#/notebook`) so it does not need a server-side fallback. In GitHub: **Settings → Pages → Source → GitHub Actions**. Push to `main` and the workflow in [`.github/workflows/pages.yml`](.github/workflows/pages.yml) builds with `base: /calendulas-library/` and deploys `dist/`. Production builds add a Content-Security-Policy meta tag; GitHub Actions are pinned to commit SHAs.
 
 Local production preview:
 

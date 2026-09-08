@@ -2,6 +2,7 @@ import { href } from "../router.ts"
 import { stats as loadStats } from "../data.ts"
 import { t } from "../i18n.ts"
 import { icon } from "../icons.ts"
+import { escapeHtml } from "../format.ts"
 
 const GLOSSARY = [
   ["learn.g.morphology", "learn.g.morphologyDef"],
@@ -26,14 +27,14 @@ export async function renderLearn(root: HTMLElement): Promise<() => void> {
       </ol>
       <h2 class="with-icon">${icon("learn", 22)}${t("learn.glossary")}</h2>
       <dl class="glossary">
-        ${GLOSSARY.map(([term, def]) => `<dt>${t(term)}</dt><dd>${t(def)}</dd>`).join("")}
+          ${GLOSSARY.map(([term, def]) => `<dt>${escapeHtml(t(term))}</dt><dd>${escapeHtml(t(def))}</dd>`).join("")}
       </dl>
       <h2 class="with-icon">${icon("percent", 22)}${t("learn.pctTitle")}</h2>
       <p>${t("learn.pctBody", { wals: stats.minOverlap.wals, gb: stats.minOverlap.grambank })}</p>
       <h2 class="with-icon">${icon("sources", 22)}${t("learn.sources")}</h2>
       <ul class="citations">
         ${Object.values(stats.datasets)
-          .map((d) => `<li>${d.citation}${d.doi ? ` (${d.doi})` : ""} · ${d.license} · ${d.tag}</li>`)
+          .map((d) => `<li>${escapeHtml(d.citation)}${d.doi ? ` (${escapeHtml(d.doi)})` : ""} · ${escapeHtml(d.license)} · ${escapeHtml(d.tag)}</li>`)
           .join("")}
       </ul>
     </section>

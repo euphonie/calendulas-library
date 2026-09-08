@@ -5,7 +5,9 @@ import mapWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url"
 import type { GeoJSONSource, MapLayerMouseEvent, StyleSpecification } from "maplibre-gl"
 import type { GeometryCollection, Topology } from "topojson-specification"
 import type { Feature, Language } from "../types.ts"
-import { colorForCodes } from "../format.ts"
+import { codeLabel } from "../data.ts"
+import { colorForCodes, escapeHtml } from "../format.ts"
+import { t } from "../i18n.ts"
 import { theme } from "../theme.ts"
 import { clampPoint, sanitizeLand } from "./land.ts"
 
@@ -227,11 +229,11 @@ export function createLanguageMap(
     map.getCanvas().style.cursor = "pointer"
     const name = String(f.properties.name)
     const code = String(f.properties.val ?? "")
-    const label = code ? (currentFeature?.codes.find((c) => c.id === code)?.name ?? code) : "not coded"
+    const label = currentFeature ? codeLabel(currentFeature, code || undefined) : t("notCoded")
     popup?.remove()
     popup = new Popup({ closeButton: false, offset: 8 })
       .setLngLat(e.lngLat)
-      .setHTML(`<strong>${name}</strong><br>${label}`)
+      .setHTML(`<strong>${escapeHtml(name)}</strong><br>${escapeHtml(label)}`)
       .addTo(map)
   })
 

@@ -1,7 +1,7 @@
 import type { FamilyNode, Feature } from "../types.ts"
-import { featureIndex, featureValues, languages as loadLangs, trees as loadTrees } from "../data.ts"
+import { codeLabel, featureIndex, featureValues, languages as loadLangs, trees as loadTrees } from "../data.ts"
 import { href, setRoute } from "../router.ts"
-import { colorForCodes } from "../format.ts"
+import { colorForCodes, cssColor, escapeHtml } from "../format.ts"
 import { createLanguageMap, type MapHandle } from "../viz/map.ts"
 import { collectLeaves, findFamilyNode, renderSunburst } from "../viz/sunburst.ts"
 import { t } from "../i18n.ts"
@@ -110,9 +110,9 @@ export async function renderSunburstView(
     const colors = colorForCodes(present)
     root.querySelector("#legend")!.innerHTML = present
       .map((code) => {
-        const name = nextFeature.codes.find((c) => c.id === code)?.name ?? code
+        const name = codeLabel(nextFeature, code)
         const n = cladeLeaves.filter((id) => values[id] === code).length
-        return `<div class="legend-row"><span class="swatch" style="background:${colors.get(code)}"></span><span>${name}</span><span class="muted">${n}</span></div>`
+        return `<div class="legend-row"><span class="swatch" style="background:${cssColor(colors.get(code) ?? "")}"></span><span>${escapeHtml(name)}</span><span class="muted">${n}</span></div>`
       })
       .join("")
     renderSunburst(root.querySelector("#sunburst")!, tree, nextFeature, values, {

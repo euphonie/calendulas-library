@@ -1,5 +1,6 @@
 import * as d3 from "d3"
 import type { FamilyNode, Feature } from "../types.ts"
+import { codeLabel } from "../data.ts"
 import { colorForCodes } from "../format.ts"
 import { theme } from "../theme.ts"
 
@@ -127,7 +128,7 @@ export function renderSunburst(
     .append("title")
     .text((d) => {
       const code = values[d.data.id]
-      const label = code ? (feature.codes.find((c) => c.id === code)?.name ?? code) : "not coded"
+      const label = codeLabel(feature, code || undefined)
       return `${d.data.name} · ${label}`
     })
 

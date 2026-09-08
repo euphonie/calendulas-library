@@ -19,3 +19,17 @@ export function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;")
 }
+
+export function cssColor(value: string): string {
+  return /^#[0-9a-fA-F]{3,8}$/.test(value) ? value : "#8a9a80"
+}
+
+export function safeHttpsUrl(value: string): string {
+  try {
+    const u = new URL(value)
+    if (u.protocol === "https:") return u.href
+  } catch {
+    /* ignore */
+  }
+  return ""
+}
