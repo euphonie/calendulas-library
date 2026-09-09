@@ -69,8 +69,7 @@ Support the project on [Ko-fi](https://ko-fi.com/Q5Q5DH9I8).
 Calendula’s Library (code, interface, and original lesson text) is
 [CC BY-SA 4.0](LICENSE): copy, remix, and share it, including commercially,
 if you credit the source **and** keep adaptations under CC-BY-SA or a
-compatible ShareAlike license. MIT would have allowed a closed fork; ShareAlike
-does not.
+compatible ShareAlike license. 
 
 Bundled WALS, Glottolog, and Grambank remain [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 (attribution, no ShareAlike requirement of their own). Credit those authors
