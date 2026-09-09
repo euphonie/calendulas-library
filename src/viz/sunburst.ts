@@ -2,7 +2,7 @@ import * as d3 from "d3"
 import type { FamilyNode, Feature } from "../types.ts"
 import { codeLabel } from "../data.ts"
 import { colorForCodes } from "../format.ts"
-import { theme } from "../theme.ts"
+import { FACET, theme } from "../theme.ts"
 
 export type SunburstPick = { id: string; name: string; language: boolean }
 
@@ -30,9 +30,9 @@ export function renderSunburst(
   },
 ): void {
   container.replaceChildren()
-  const width = Math.max(container.clientWidth || 560, 420)
-  const height = Math.max(container.clientHeight || 560, 420)
-  const radius = Math.min(width, height) / 2 - 8
+  const width = Math.max(container.clientWidth || 240, 160)
+  const height = Math.max(container.clientHeight || 240, 160)
+  const radius = Math.min(width, height) / 2 - 6
   const colors = colorForCodes([...new Set(Object.values(values).map(String))])
 
   const root = d3
@@ -54,15 +54,15 @@ export function renderSunburst(
     .arc<ArcNode>()
     .startAngle((d) => d.x0)
     .endAngle((d) => d.x1)
-    .padAngle(0.004)
-    .innerRadius((d) => Math.max(18, d.y0 * innerScale))
-    .outerRadius((d) => Math.max(22, d.y1 * innerScale - 1.5))
+    .padAngle(0.012)
+    .innerRadius((d) => Math.max(40, d.y0 * innerScale))
+    .outerRadius((d) => Math.max(44, d.y1 * innerScale - 1.2))
 
   const featureArc = d3
     .arc<ArcNode>()
     .startAngle((d) => d.x0)
     .endAngle((d) => d.x1)
-    .padAngle(0.003)
+    .padAngle(0.01)
     .innerRadius(radius * 0.72)
     .outerRadius(radius * 0.96)
 
@@ -95,10 +95,11 @@ export function renderSunburst(
     .data(root.descendants().filter((d) => d.depth > 0 && !d.data.language && d.x1 - d.x0 > 0.008))
     .join("path")
     .attr("d", genealogyArc)
-    .attr("fill", theme.land)
-    .attr("fill-opacity", (d) => (emphasized(d) ? 0.95 : 0.18))
-    .attr("stroke", (d) => (d.data.id === selected ? theme.yellow : theme.landLine))
-    .attr("stroke-width", (d) => (d.data.id === selected ? 2 : 0.6))
+    .attr("fill", (d) => FACET[d.depth % FACET.length])
+    .attr("fill-opacity", (d) => (emphasized(d) ? 1 : 0.22))
+    .attr("stroke", theme.ink)
+    .attr("stroke-width", (d) => (d.data.id === selected ? 2.4 : 1.15))
+    .attr("stroke-linejoin", "miter")
     .attr("cursor", "pointer")
     .on("click", (event, d) => {
       event.stopPropagation()
@@ -117,9 +118,10 @@ export function renderSunburst(
       const code = values[d.data.id]
       return code ? (colors.get(code) ?? theme.uncoded) : theme.uncoded
     })
-    .attr("fill-opacity", (d) => (emphasized(d) ? 0.96 : 0.16))
-    .attr("stroke", (d) => (d.data.id === selected ? theme.yellow : theme.bg))
-    .attr("stroke-width", (d) => (d.data.id === selected ? 1.6 : 0.3))
+    .attr("fill-opacity", (d) => (emphasized(d) ? 1 : 0.18))
+    .attr("stroke", theme.ink)
+    .attr("stroke-width", (d) => (d.data.id === selected ? 2 : 0.9))
+    .attr("stroke-linejoin", "miter")
     .attr("cursor", "pointer")
     .on("click", (event, d) => {
       event.stopPropagation()
@@ -136,7 +138,11 @@ export function renderSunburst(
     .append("g")
     .attr("pointer-events", "none")
     .selectAll("text")
-    .data(root.descendants().filter((d) => d.depth === 1 && d.x1 - d.x0 > 0.22))
+    .data(root.descendants().filter((d) => {
+      if (d.depth !== 1 || d.x1 - d.x0 <= 0.28) return false
+      const r = (d.y0 + d.y1) * innerScale * 0.5
+      return r > 56
+    }))
     .join("text")
     .attr("class", "sunburst-label")
     .attr("transform", (d) => {
@@ -150,10 +156,10 @@ export function renderSunburst(
 
   svg
     .append("circle")
-    .attr("r", 28)
+    .attr("r", 34)
     .attr("fill", theme.panel)
-    .attr("stroke", theme.yellow)
-    .attr("stroke-width", 1.4)
+    .attr("stroke", theme.ink)
+    .attr("stroke-width", 2.6)
     .attr("cursor", "pointer")
     .on("click", () => opts.onPick({ id: tree.id, name: tree.name, language: false }))
 

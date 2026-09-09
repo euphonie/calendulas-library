@@ -172,10 +172,10 @@ function addGroupLayers(map: MapLibreMap, codes: string[], colors: Map<string, s
     filter: ["==", ["get", "langId"], ""],
     paint: {
       "circle-radius": 11,
-      "circle-color": theme.yellow,
-      "circle-opacity": 0.14,
-      "circle-stroke-color": theme.yellow,
-      "circle-stroke-width": 2,
+      "circle-color": theme.rust,
+      "circle-opacity": 0.16,
+      "circle-stroke-color": theme.ink,
+      "circle-stroke-width": 2.2,
     },
   })
 }

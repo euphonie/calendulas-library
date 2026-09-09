@@ -4,8 +4,11 @@ import "@fontsource/dm-sans/500.css"
 import "@fontsource/dm-sans/600.css"
 import "@fontsource/dm-sans/700.css"
 import "@fontsource/fraunces/500.css"
+import "@fontsource/fraunces/500-italic.css"
 import "@fontsource/fraunces/600.css"
+import "@fontsource/fraunces/600-italic.css"
 import "@fontsource/fraunces/700.css"
+import "@fontsource/fraunces/700-italic.css"
 import "@fontsource/ibm-plex-mono/400.css"
 import "@fontsource/ibm-plex-mono/500.css"
 import "./style.css"
@@ -29,14 +32,14 @@ import { icon, NAV_ICONS, type IconName } from "./icons.ts"
 import { escapeHtml } from "./format.ts"
 
 const app = document.querySelector<HTMLDivElement>("#app")!
+const assetBase = import.meta.env.BASE_URL
 
 function shell(): string {
   return `
     <header class="site-header">
       <a class="brand" href="${href("/")}">
-        ${icon("flower", 26)}
         <span class="brand-text">
-          <span class="brand-mark">Calendula’s Library</span>
+          <span class="brand-mark"><span class="brand-calendula">Calendula’s</span> <span class="brand-library">Library</span></span>
           <span class="brand-sub">${t("brand.sub")}</span>
         </span>
       </a>
@@ -153,6 +156,7 @@ function bindLocalePicker(citations: string): void {
 }
 
 async function boot(): Promise<void> {
+  document.documentElement.style.setProperty("--mockup-pattern", `url("${assetBase}brand/pattern.jpg")`)
   applyChartTheme()
   document.documentElement.lang = getLocale()
   app.innerHTML = shell()

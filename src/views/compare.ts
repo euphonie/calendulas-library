@@ -1,5 +1,5 @@
 import type { Feature } from "../types.ts"
-import { codeLabel, featureIndex, languageMap, searchLanguages, vectors as loadVectors, languages as loadLangs } from "../data.ts"
+import { codeLabel, featureIndex, languageMap, vectors as loadVectors, languages as loadLangs } from "../data.ts"
 import { href, setRoute } from "../router.ts"
 import { escapeHtml } from "../format.ts"
 import { t } from "../i18n.ts"
@@ -9,30 +9,24 @@ export async function renderCompare(root: HTMLElement, aId?: string, bId?: strin
   const [langs, byId, index, vecs] = await Promise.all([loadLangs(), languageMap(), featureIndex(), loadVectors()])
   const a = aId ? byId.get(aId) : undefined
   const b = bId ? byId.get(bId) : undefined
+  const languageOptions = (selected?: string) =>
+    `<option value="">${escapeHtml(t("compare.pick"))}</option>${langs
+      .map(
+        (l) =>
+          `<option value="${escapeHtml(l.id)}"${l.id === selected ? " selected" : ""}>${escapeHtml(l.name)}</option>`,
+      )
+      .join("")}`
   root.innerHTML = `
     <section class="page">
       <h1 class="with-icon">${icon("compare", 28)}${t("compare.title")}</h1>
       <div class="compare-picks">
-        <label class="field"><span>${icon("language")}${t("compare.a")}</span> <input id="a" list="lang-list" value="${escapeHtml(a?.name ?? "")}" /></label>
-        <label class="field"><span>${icon("language")}${t("compare.b")}</span> <input id="b" list="lang-list" value="${escapeHtml(b?.name ?? "")}" /></label>
-        <datalist id="lang-list"></datalist>
+        <label class="field"><span>${icon("language")}${t("compare.a")}</span> <select id="a">${languageOptions(a?.id)}</select></label>
+        <label class="field"><span>${icon("language")}${t("compare.b")}</span> <select id="b">${languageOptions(b?.id)}</select></label>
         <button id="go" type="button" class="btn">${withIcon("compare", t("compare.go"))}</button>
       </div>
       <div id="table"></div>
     </section>
   `
-  const list = root.querySelector("#lang-list")!
-  langs.slice(0, 400).forEach((l) => {
-    const o = document.createElement("option")
-    o.value = l.name
-    list.append(o)
-  })
-
-  const resolve = (text: string) => {
-    const q = text.trim().toLowerCase()
-    return byId.get(q) || langs.find((l) => l.name.toLowerCase() === q) || searchLanguages(langs, text, 1)[0]
-  }
-
   const paint = () => {
     if (!a || !b) {
       root.querySelector("#table")!.innerHTML = `<p class="muted">${t("compare.pick")}</p>`
@@ -64,9 +58,9 @@ export async function renderCompare(root: HTMLElement, aId?: string, bId?: strin
   }
 
   root.querySelector("#go")!.addEventListener("click", () => {
-    const nextA = resolve((root.querySelector("#a") as HTMLInputElement).value)
-    const nextB = resolve((root.querySelector("#b") as HTMLInputElement).value)
-    if (nextA && nextB) setRoute(`/compare?a=${nextA.id}&b=${nextB.id}`)
+    const nextA = (root.querySelector("#a") as HTMLSelectElement).value
+    const nextB = (root.querySelector("#b") as HTMLSelectElement).value
+    if (nextA && nextB) setRoute(`/compare?a=${encodeURIComponent(nextA)}&b=${encodeURIComponent(nextB)}`)
   })
   paint()
   return () => {}

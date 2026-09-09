@@ -21,7 +21,7 @@ export function escapeHtml(value: string): string {
 }
 
 export function cssColor(value: string): string {
-  return /^#[0-9a-fA-F]{3,8}$/.test(value) ? value : "#8a9a80"
+  return /^#[0-9a-fA-F]{3,8}$/.test(value) ? value : "#c4b49a"
 }
 
 export function safeHttpsUrl(value: string): string {

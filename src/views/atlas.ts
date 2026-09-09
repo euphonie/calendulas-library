@@ -18,6 +18,8 @@ export async function renderAtlas(
   root.innerHTML = `
     <section class="atlas">
       <aside class="atlas-side">
+        <p class="kicker" id="feature-area"></p>
+        <h1 class="atlas-title" id="feature-title"></h1>
         <label class="field">
           <span>${icon("feature")}${t("atlas.feature")}</span>
           <select id="feature-select"></select>
@@ -60,6 +62,9 @@ export async function renderAtlas(
   })
 
   async function paint(next: Feature, langId?: string) {
+    root.querySelector("#feature-area")!.textContent = next.area
+    root.querySelector("#feature-title")!.innerHTML =
+      `<span class="id-badge">${escapeHtml(next.sourceId)}</span>${escapeHtml(next.name)}`
     root.querySelector("#feature-blurb")!.textContent =
       next.blurb || t("atlas.coding", { area: next.area, source: next.source === "wals" ? "WALS" : "Grambank" })
     const src = root.querySelector<HTMLAnchorElement>("#feature-source")!
@@ -89,8 +94,10 @@ export async function renderAtlas(
             <button type="button" class="layer-toggle" aria-pressed="true" aria-label="${escapeHtml(t("showHide", { name: g.name }))}">
               <span class="swatch" style="background:${cssColor(g.color)}"></span>
             </button>
-            <span class="legend-name">${escapeHtml(g.name)}</span>
-            <span class="muted">${g.n}</span>
+            <span class="legend-caption">
+              <span class="legend-name">${escapeHtml(g.name)}</span>
+              <span class="muted">${g.n}</span>
+            </span>
             <button type="button" class="label-toggle" aria-pressed="false" aria-label="${escapeHtml(t("labelsFor", { name: g.name }))}">${withIcon("labels", t("labels"), 13)}</button>
           </div>`,
         )
@@ -142,11 +149,12 @@ export async function renderAtlas(
   function showPanel(lang: Language, feat: Feature, code: string | undefined) {
     const label = codeLabel(feat, code)
     root.querySelector("#lang-panel")!.innerHTML = `
-      <h2 class="with-icon">${icon("language", 22)}${escapeHtml(lang.name)}</h2>
+      <p class="kicker">${t("atlas.selected")}</p>
+      <h2>${escapeHtml(lang.name)}</h2>
+      <p class="meta"><strong>${escapeHtml(feat.sourceId)}:</strong> ${escapeHtml(label)}</p>
       <p class="meta">${escapeHtml(lang.familyName ?? t("familyUnknown"))} · ${escapeHtml(lang.macroarea ?? t("areaUnknown"))}</p>
-      <p><strong>${escapeHtml(feat.sourceId)}:</strong> ${escapeHtml(label)}</p>
       <p class="row-links">
-        <a href="${href(`/language/${lang.id}`)}">${withIcon("profile", t("openProfile"))}</a>
+        <a href="${href(`/language/${lang.id}`)}">${withIcon("profile", t("atlas.viewDossier"))}</a>
         <a href="${href(`/compare?a=${lang.id}`)}">${withIcon("compare", t("nav.compare"))}</a>
       </p>
     `

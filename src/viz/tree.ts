@@ -1,6 +1,7 @@
 import * as d3 from "d3"
 import type { FamilyNode } from "../types.ts"
 import { href } from "../router.ts"
+import { theme } from "../theme.ts"
 
 export function renderTree(container: HTMLElement, rootData: FamilyNode, selectedId?: string): void {
   container.replaceChildren()
@@ -28,7 +29,7 @@ export function renderTree(container: HTMLElement, rootData: FamilyNode, selecte
   svg
     .append("g")
     .attr("fill", "none")
-    .attr("stroke", "#b7d39a")
+    .attr("stroke", theme.line)
     .attr("stroke-width", 1)
     .selectAll("path")
     .data(laid.links())
@@ -50,8 +51,8 @@ export function renderTree(container: HTMLElement, rootData: FamilyNode, selecte
   node
     .append("circle")
     .attr("r", (d) => (d.data.id === selectedId ? 5.5 : 3.2))
-    .attr("fill", (d) => (d.data.language ? (d.data.id === selectedId ? "#042a22" : "#8fbf5a") : "#ffffff"))
-    .attr("stroke", "#042a22")
+    .attr("fill", (d) => (d.data.language ? (d.data.id === selectedId ? theme.ink : theme.land) : theme.panel))
+    .attr("stroke", theme.ink)
     .attr("stroke-width", 1)
 
   node

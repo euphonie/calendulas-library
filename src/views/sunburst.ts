@@ -32,22 +32,24 @@ export async function renderSunburstView(
     <section class="sunburst-page">
       <aside class="sunburst-side">
         <p class="kicker with-icon">${icon("sunburst", 16)}${t("sunburst.kicker")}</p>
-        <h1 class="with-icon">${icon("sunburst", 28)}${t("sunburst.title")}</h1>
-        <p class="blurb">${t("sunburst.blurb")}</p>
-        <label class="field"><span>${icon("tree")}${t("sunburst.family")}</span>
-          <select id="family-select"></select>
-        </label>
-        <label class="field"><span>${icon("feature")}${t("sunburst.featureRing")}</span>
-          <select id="feature-select"></select>
-        </label>
-        <p class="meta" id="sunburst-status"></p>
-        <p class="row-links">
-          <button type="button" class="btn-ghost" id="geo-filter">${withIcon("filter", t("sunburst.geoFilter"))}</button>
-          <button type="button" class="btn-ghost" id="clear-filters">${withIcon("clear", t("sunburst.clear"))}</button>
-        </p>
+        <h1 class="with-icon">${icon("sunburst", 22)}${t("sunburst.title")}</h1>
+        <p class="blurb sunburst-hide-narrow">${t("sunburst.blurb")}</p>
+        <div class="sunburst-controls">
+          <label class="field"><span>${icon("tree")}${t("sunburst.family")}</span>
+            <select id="family-select"></select>
+          </label>
+          <label class="field"><span>${icon("feature")}${t("sunburst.featureRing")}</span>
+            <select id="feature-select"></select>
+          </label>
+          <p class="meta" id="sunburst-status"></p>
+          <p class="row-links">
+            <button type="button" class="btn-ghost" id="geo-filter">${withIcon("filter", t("sunburst.geoFilter"))}</button>
+            <button type="button" class="btn-ghost" id="clear-filters">${withIcon("clear", t("sunburst.clear"))}</button>
+          </p>
+        </div>
         <div class="legend" id="legend"></div>
-        <p class="muted">${t("sunburst.credit")}</p>
-        <p class="row-links"><a href="${href(`/language/kich1262`)}">${withIcon("profile", t("sunburst.dossier"))}</a><a href="${href("/atlas")}">${withIcon("atlas", t("sunburst.atlasOnly"))}</a></p>
+        <p class="muted sunburst-hide-narrow">${t("sunburst.credit")}</p>
+        <p class="row-links sunburst-hide-narrow"><a href="${href(`/language/kich1262`)}">${withIcon("profile", t("sunburst.dossier"))}</a><a href="${href("/atlas")}">${withIcon("atlas", t("sunburst.atlasOnly"))}</a></p>
       </aside>
       <div class="sunburst-stage">
         <div class="sunburst-wrap" id="sunburst"></div>
@@ -94,8 +96,12 @@ export async function renderSunburstView(
 
   let geoIds: Set<string> | null = null
   let values: Record<string, string> = {}
+  let currentFeature = feature
+  let currentClade = cladeId
 
   const paint = async (nextFeature: Feature, clade: string) => {
+    currentFeature = nextFeature
+    currentClade = clade
     values = await featureValues(nextFeature.id)
     const node = findFamilyNode(tree, clade) ?? tree
     const cladeLeaves = collectLeaves(node)
@@ -142,15 +148,34 @@ export async function renderSunburstView(
   })
 
   await paint(feature, cladeId)
-  requestAnimationFrame(() => {
+  const wrap = root.querySelector<HTMLElement>("#sunburst")!
+  let lastW = 0
+  let lastH = 0
+  const redraw = () => {
     mapHandle.map.resize()
-    renderSunburst(root.querySelector("#sunburst")!, tree, feature, values, {
-      selectedId: cladeId === tree.id ? undefined : cladeId,
+    const w = wrap.clientWidth
+    const h = wrap.clientHeight
+    if (w < 8 || h < 8) return
+    if (w === lastW && h === lastH) return
+    lastW = w
+    lastH = h
+    renderSunburst(wrap, tree, currentFeature, values, {
+      selectedId: currentClade === tree.id ? undefined : currentClade,
       geoIds,
-      onPick: (pick) => setRoute(pathOf(familyId, feature.id, pick.id)),
+      onPick: (pick) => setRoute(pathOf(familyId, currentFeature.id, pick.id)),
     })
+  }
+  requestAnimationFrame(redraw)
+  const ro = new ResizeObserver(() => {
+    requestAnimationFrame(redraw)
   })
-  return () => mapHandle.destroy()
+  ro.observe(wrap)
+  const mapEl = root.querySelector("#map")
+  if (mapEl) ro.observe(mapEl)
+  return () => {
+    ro.disconnect()
+    mapHandle.destroy()
+  }
 }
 
 function pathOf(family: string, feature: string, clade?: string): string {

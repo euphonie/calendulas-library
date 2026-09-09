@@ -2,6 +2,7 @@ import * as d3 from "d3"
 import type { Feature } from "../types.ts"
 import { codeLabel } from "../data.ts"
 import { colorForCodes } from "../format.ts"
+import { theme } from "../theme.ts"
 
 export function renderHeatmap(
   container: HTMLElement,
@@ -55,7 +56,7 @@ export function renderHeatmap(
     .attr("width", cell - 4)
     .attr("height", cell - 4)
     .attr("rx", 4)
-    .attr("fill", (d) => rowColors.get(d.r) ?? "#042a22")
+    .attr("fill", (d) => rowColors.get(d.r) ?? theme.ink)
     .attr("fill-opacity", (d) => 0.15 + (0.85 * d.n) / max)
   svg
     .append("g")

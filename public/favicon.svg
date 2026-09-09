@@ -1,9 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="6" fill="#c8f29a"/>
-  <rect x="7" y="8" width="18" height="17" rx="1.4" fill="#042a22"/>
-  <rect x="9" y="10" width="14" height="13" rx="0.6" fill="#f4faea"/>
-  <path d="M16 10v13" stroke="#042a22" stroke-width="1.2"/>
-  <circle cx="16" cy="7" r="2.4" fill="#d4532a"/>
-  <circle cx="13.4" cy="6.4" r="1.7" fill="#d4532a"/>
-  <circle cx="18.6" cy="6.4" r="1.7" fill="#d4532a"/>
+  <rect width="32" height="32" fill="#f5d23a"/>
+  <polygon points="0,0 16,0 0,16" fill="#d4202a"/>
+  <polygon points="32,0 32,16 16,0" fill="#0d8a72"/>
+  <polygon points="0,32 16,32 0,16" fill="#6b3aa0"/>
+  <polygon points="32,32 16,32 32,16" fill="#2d6bb5"/>
+  <rect x="9" y="9" width="14" height="14" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+  <path d="M16 11v10" stroke="#111111" stroke-width="1.4"/>
+  <circle cx="16" cy="8" r="2.4" fill="#d4202a" stroke="#111111" stroke-width="1"/>
+  <circle cx="13.4" cy="7.4" r="1.5" fill="#0d8a72"/>
+  <circle cx="18.6" cy="7.4" r="1.5" fill="#6b3aa0"/>
 </svg>

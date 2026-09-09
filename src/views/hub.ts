@@ -2,70 +2,78 @@ import type { Language } from "../types.ts"
 import { href, setRoute } from "../router.ts"
 import { matchIntent } from "../intent.ts"
 import { tools } from "../tools.ts"
-import { hubArt, type HubArtId } from "../viz/hub-art.ts"
+import { hubArt } from "../viz/hub-art.ts"
 import { t, toolMsg } from "../i18n.ts"
 import { icon, TOOL_ICONS, withIcon } from "../icons.ts"
 import { escapeHtml } from "../format.ts"
 
-const useCases: { intentKey: "use.sov.intent" | "use.bund.intent" | "use.pair.intent" | "use.sun.intent"; learnKey: "use.sov.learn" | "use.bund.learn" | "use.pair.learn" | "use.sun.learn"; art: HubArtId }[] = [
-  { intentKey: "use.sov.intent", art: "sov", learnKey: "use.sov.learn" },
-  { intentKey: "use.bund.intent", art: "sprachbund", learnKey: "use.bund.learn" },
-  { intentKey: "use.pair.intent", art: "pair", learnKey: "use.pair.learn" },
-  { intentKey: "use.sun.intent", art: "sunburst", learnKey: "use.sun.learn" },
+const useCases: { intentKey: "use.sov.intent" | "use.bund.intent" | "use.pair.intent" | "use.sun.intent" }[] = [
+  { intentKey: "use.sov.intent" },
+  { intentKey: "use.bund.intent" },
+  { intentKey: "use.pair.intent" },
+  { intentKey: "use.sun.intent" },
 ]
+const assetBase = import.meta.env.BASE_URL
+const toolArt: Record<string, string> = {
+  atlas: "atlas",
+  sunburst: "sunburst",
+  dossier: "dossier",
+  compare: "compare",
+  investigate: "investigate",
+  learn: "learn",
+}
 
 export async function renderHub(root: HTMLElement, langs: Language[], initial = ""): Promise<() => void> {
   root.innerHTML = `
     <section class="hub">
       <div class="hub-hero">
-        <p class="kicker with-icon">${icon("shelf", 16)}${t("hub.kicker")}</p>
-        <h1>${t("hub.title")}</h1>
-        <p class="blurb">${t("hub.blurb")}</p>
-        <form class="intent-pill" id="intent-form">
-          ${icon("search", 18)}
-          <label class="visually-hidden" for="intent">${t("hub.intent")}</label>
-          <input id="intent" type="search" name="intent" value="${escapeHtml(initial)}" placeholder="${t("hub.placeholder")}" />
-          <button class="btn" type="submit">${withIcon("open", t("hub.open"))}</button>
-        </form>
-        <nav class="hub-jumps" aria-label="${t("hub.jump")}">
-          ${tools.map((tool) => `<a class="hub-jump" href="${href(tool.href)}">${withIcon(TOOL_ICONS[tool.id] ?? "open", toolMsg(tool.id, "name"))}</a>`).join("")}
-        </nav>
+        <div class="hub-hero-inner">
+          <div class="hub-hero-books">
+            <img src="${assetBase}brand/books-scene.jpg" alt="" />
+          </div>
+          <div class="hub-hero-copy">
+            <p class="poster-sidecopy">Languages<br>People<br>Patterns<br>A brighter world</p>
+            <h1 class="poster-wordmark">
+              <span>Calendula’s</span>
+              <strong>Library</strong>
+            </h1>
+            <p class="poster-tagline">${t("brand.sub")}</p>
+            <p class="blurb">${t("hub.blurb")}</p>
+            <form class="intent-pill" id="intent-form">
+              ${icon("search", 18)}
+              <label class="visually-hidden" for="intent">${t("hub.intent")}</label>
+              <input id="intent" type="search" name="intent" value="${escapeHtml(initial)}" placeholder="${t("hub.placeholder")}" />
+              <button class="btn" type="submit">${withIcon("open", t("hub.open"))}</button>
+            </form>
+          </div>
+          <div class="hub-hero-art">
+            <img src="${assetBase}brand/poster-scene.jpg" alt="" />
+          </div>
+        </div>
       </div>
       <div class="hub-matches" id="matches"></div>
-      <div class="hub-band">
+      <div class="hub-tools">
         <div class="page">
-          <h2 class="with-icon">${icon("question", 22)}${t("hub.start")}</h2>
-          <p class="blurb use-lead">${t("hub.useLead")}</p>
-          <div class="use-grid">
-            ${useCases
+          <div class="tool-grid">
+            ${tools
+              .filter((tool) => tool.id !== "notebook")
               .map(
-                (c) => `<button type="button" class="card use-card" data-ex="${escapeHtml(t(c.intentKey))}">
-                  ${hubArt[c.art]}
-                  <h3>${t(c.intentKey)}</h3>
-                  <p>${t(c.learnKey)}</p>
-                </button>`,
+                (tool) => `<a class="card tool-card tool-card-simple" href="${href(tool.href)}">
+                  <span class="tool-icon tool-icon-${tool.id}">${toolArt[tool.id] ? `<img src="${assetBase}brand/menu-icons/${toolArt[tool.id]}.png" alt="" />` : icon(TOOL_ICONS[tool.id] ?? "open", 28)}</span>
+                  <h3>${toolMsg(tool.id, "name")}</h3>
+                  <p>${escapeHtml(tool.learns[0])}</p>
+                </a>`,
               )
               .join("")}
           </div>
         </div>
       </div>
-      <div class="hub-tools">
+      <div class="hub-band">
         <div class="page">
-          <h2 class="with-icon">${icon("shelf", 22)}${t("hub.shelf")}</h2>
-          <p class="blurb use-lead">${t("hub.shelfLead")}</p>
-          <div class="tool-grid">
-            ${tools
-              .map(
-                (tool) => `<a class="card tool-card" href="${href(tool.href)}">
-                  ${hubArt[tool.id]}
-                  <div class="tool-copy">
-                    <p class="kicker with-icon">${icon(TOOL_ICONS[tool.id] ?? "open")}${toolMsg(tool.id, "tag")}</p>
-                    <h3>${toolMsg(tool.id, "name")}</h3>
-                    <p>${toolMsg(tool.id, "blurb")}</p>
-                  </div>
-                </a>`,
-              )
-              .join("")}
+          <h2>${t("hub.start")}</h2>
+          <p class="blurb use-lead">${t("hub.useLead")}</p>
+          <div class="q-pills">
+            ${useCases.map((c) => `<button type="button" class="q-pill" data-ex="${escapeHtml(t(c.intentKey))}">${escapeHtml(t(c.intentKey))}${icon("open", 16)}</button>`).join("")}
           </div>
         </div>
       </div>
